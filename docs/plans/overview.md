@@ -4,8 +4,8 @@
 
 | # | Фаза | Статус | Файл плана |
 |---|------|--------|------------|
-| 1 | **Core** — Окно, тайлы, движение, коллизии, камера | Не начато | [phase_1_core.md](phase_1_core.md) |
-| 2 | **Dungeon** — BSP-генерация, FOV, мини-карта | Не начато | [phase_2_dungeon.md](phase_2_dungeon.md) |
+| 1 | **Core** — Окно, тайлы, движение, коллизии, камера | Завершено ✓ | [phase_1_core.md](phase_1_core.md) |
+| 2 | **Dungeon** — BSP-генерация, FOV, мини-карта | Завершено ✓ | [phase_2_dungeon.md](phase_2_dungeon.md) |
 | 3 | **Combat** — Атака мечом, враги, AI, дэш | Не начато | [phase_3_combat.md](phase_3_combat.md) |
 | 4 | **Items** — Лут, инвентарь, экипировка, зелья | Не начато | [phase_4_items.md](phase_4_items.md) |
 | 5 | **Magic** — Мана, 6 заклинаний, проджектайлы, AoE | Не начато | [phase_5_magic.md](phase_5_magic.md) |

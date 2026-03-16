@@ -15,6 +15,8 @@ public class InputSystem : ITickable
 
     public void Tick(float dt)
     {
+        if (_ctx.State != GameState.Playing) return;
+
         var world = _ctx.World;
         int scaledTile = _ctx.Config.ScaledTileSize;
 

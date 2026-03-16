@@ -19,8 +19,16 @@ public static class ServiceRegistration
         // Systems — registration order = tick order
         services.AddTickable<InputSystem>();
         services.AddTickable<PhysicsSystem>();
+        services.AddTickable<FloorTransitionSystem>();
+        services.AddTickable<FovSystem>();
         services.AddTickable<CameraSystem>();
         services.AddTickable<RenderSystem>();
+
+        // Render sub-systems — registration order = draw order
+        services.AddRenderTickable<TileRenderSystem>();
+        services.AddRenderTickable<EntityRenderSystem>();
+        services.AddRenderTickable<DebugRenderSystem>();
+        services.AddRenderTickable<HudRenderSystem>();
 
         // Game
         services.AddSingleton<Game>();
@@ -28,13 +36,15 @@ public static class ServiceRegistration
         return services.BuildServiceProvider();
     }
 
-    /// <summary>
-    /// Registers a system as both its concrete type and ITickable.
-    /// One line per system, automatically picked up by the game loop.
-    /// </summary>
     private static void AddTickable<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services) where T : class, ITickable
     {
         services.AddSingleton<T>();
         services.AddSingleton<ITickable>(sp => sp.GetRequiredService<T>());
+    }
+
+    private static void AddRenderTickable<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services) where T : class, IRenderTickable
+    {
+        services.AddSingleton<T>();
+        services.AddSingleton<IRenderTickable>(sp => sp.GetRequiredService<T>());
     }
 }

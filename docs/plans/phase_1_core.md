@@ -106,7 +106,7 @@ Program.cs
 | `src/ECS/Systems/InputSystem.cs` | WASD/стрелки, 8 направлений |
 | `src/ECS/Systems/PhysicsSystem.cs` | AABB коллизии, скольжение |
 | `src/ECS/Systems/CameraSystem.cs` | Плавный lerp, screen-shake |
-| `src/ECS/Systems/RenderSystem.cs` | Тайлы, сущности, дебаг, HUD |
+| `src/ECS/Systems/RenderSystem.cs` | Обёртка рендера (BeginDrawing/EndDrawing) — рефакторинг в Фазе 2 |
 | `src/Dungeon/TileMap.cs` | Тайловая карта, тестовый уровень |
 
 ---

@@ -15,6 +15,8 @@ public class PhysicsSystem : ITickable
 
     public void Tick(float dt)
     {
+        if (_ctx.State != GameState.Playing) return;
+
         var world = _ctx.World;
         var map = _ctx.Map;
         int tileSize = _ctx.Config.ScaledTileSize;

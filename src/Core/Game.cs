@@ -10,18 +10,15 @@ public class Game
     private readonly GameConfig _config;
     private readonly GameContext _ctx;
     private readonly IReadOnlyList<ITickable> _tickables;
-    private readonly RenderSystem _renderSystem;
 
     public Game(
         GameConfig config,
         GameContext ctx,
-        IEnumerable<ITickable> tickables,
-        RenderSystem renderSystem)
+        IEnumerable<ITickable> tickables)
     {
         _config = config;
         _ctx = ctx;
         _tickables = tickables.ToList();
-        _renderSystem = renderSystem;
     }
 
     public void Run()
@@ -35,14 +32,19 @@ public class Game
         {
             float dt = Raylib.GetFrameTime();
 
+            // Глобальные переключатели
             if (Raylib.IsKeyPressed(KeyboardKey.F3))
-                _renderSystem.DebugMode = !_renderSystem.DebugMode;
+                _ctx.DebugMode = !_ctx.DebugMode;
 
-            if (_ctx.State == GameState.Playing)
+            if (Raylib.IsKeyPressed(KeyboardKey.Tab))
             {
-                for (int i = 0; i < _tickables.Count; i++)
-                    _tickables[i].Tick(dt);
+                _ctx.ShowFullMap = !_ctx.ShowFullMap;
+                _ctx.State = _ctx.ShowFullMap ? GameState.Paused : GameState.Playing;
             }
+
+            // Все системы тикают всегда — каждая сама решает, реагировать ли на состояние
+            for (int i = 0; i < _tickables.Count; i++)
+                _tickables[i].Tick(dt);
         }
 
         Raylib.CloseWindow();
@@ -50,23 +52,28 @@ public class Game
 
     private void Init()
     {
-        _ctx.Map = TileMap.CreateTestMap();
-        SpawnPlayer();
+        _ctx.DungeonSeed = Environment.TickCount;
+        _ctx.CurrentFloor = 1;
+
+        var result = DungeonGenerator.Generate(1, _config, _ctx.DungeonSeed);
+        _ctx.Map = result.Map;
+
+        SpawnPlayer(result.SpawnRoom);
         SnapCameraToPlayer();
     }
 
-    private void SpawnPlayer()
+    private void SpawnPlayer(Room spawnRoom)
     {
         var world = _ctx.World;
         int ts = _config.ScaledTileSize;
         int playerId = world.CreateEntity();
 
-        float spawnX = 4 * ts;
-        float spawnY = 3 * ts;
+        float spawnX = spawnRoom.CenterX * ts;
+        float spawnY = spawnRoom.CenterY * ts;
 
         world.Add(playerId, new Position(spawnX, spawnY));
         world.Add(playerId, new Velocity(0, 0));
-        world.Add(playerId, new Sprite(new Color(60, 180, 75, 255)));
+        world.Add(playerId, new Sprite(new Raylib_cs.Color(60, 180, 75, 255)));
         world.Add(playerId, new Collider(
             ts * 0.8f, ts * 0.8f,
             ts * 0.1f, ts * 0.1f

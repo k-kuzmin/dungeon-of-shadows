@@ -4,18 +4,31 @@ public enum TileType
 {
     Empty,
     Floor,
-    Wall
+    Wall,
+    StairDown
+}
+
+public enum DecorationType
+{
+    None,
+    Torch,
+    Crack,
+    Bones,
+    Puddle
 }
 
 public struct Tile
 {
     public TileType Type;
     public bool Walkable;
+    /// <summary>0 = Unknown, 1 = Explored, 2 = Visible (для FOV)</summary>
+    public byte Visibility;
 
     public Tile(TileType type)
     {
         Type = type;
-        Walkable = type == TileType.Floor;
+        Walkable = type is TileType.Floor or TileType.StairDown;
+        Visibility = 0; // 0 = Unknown, раскрывается через FOV
     }
 }
 
@@ -24,12 +37,15 @@ public class TileMap
     public int Width { get; }
     public int Height { get; }
     public Tile[,] Tiles { get; }
+    public DecorationType[,] Decorations { get; }
+    public IReadOnlyList<Room> Rooms { get; internal set; } = Array.Empty<Room>();
 
     public TileMap(int width, int height)
     {
         Width = width;
         Height = height;
         Tiles = new Tile[width, height];
+        Decorations = new DecorationType[width, height];
     }
 
     public bool InBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
@@ -99,14 +115,14 @@ public class TileMap
         return map;
     }
 
-    private static void CarveRoom(TileMap map, int x, int y, int w, int h)
+    internal static void CarveRoom(TileMap map, int x, int y, int w, int h)
     {
         for (int ix = x; ix < x + w && ix < map.Width; ix++)
             for (int iy = y; iy < y + h && iy < map.Height; iy++)
                 map.Tiles[ix, iy] = new Tile(TileType.Floor);
     }
 
-    private static void CarveHCorridor(TileMap map, int x1, int x2, int y)
+    internal static void CarveHCorridor(TileMap map, int x1, int x2, int y)
     {
         for (int x = Math.Min(x1, x2); x <= Math.Max(x1, x2); x++)
         {
@@ -115,7 +131,7 @@ public class TileMap
         }
     }
 
-    private static void CarveVCorridor(TileMap map, int x, int y1, int y2)
+    internal static void CarveVCorridor(TileMap map, int x, int y1, int y2)
     {
         for (int y = Math.Min(y1, y2); y <= Math.Max(y1, y2); y++)
         {

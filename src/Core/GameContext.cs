@@ -14,6 +14,10 @@ public class GameContext
     public GameState State { get; set; } = GameState.Playing;
     public TileMap Map { get; set; } = null!;
     public Camera2D Camera { get; set; }
+    public int CurrentFloor { get; set; } = 1;
+    public int DungeonSeed { get; set; }
+    public bool DebugMode { get; set; }
+    public bool ShowFullMap { get; set; }
 
     public GameContext(GameConfig config)
     {
