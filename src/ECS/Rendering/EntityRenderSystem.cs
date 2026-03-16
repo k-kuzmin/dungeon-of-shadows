@@ -1,7 +1,7 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
 
-namespace DungeonOfShadows.ECS.Systems;
+namespace DungeonOfShadows.ECS.Rendering.Systems;
 
 /// <summary>
 /// Рисует сущности (спрайты) с учётом FOV. World-space.
@@ -37,11 +37,38 @@ public class EntityRenderSystem : IRenderTickable
             if (map.InBounds(tx, ty) && map.Tiles[tx, ty].Visibility < 2)
                 continue;
 
+            // Afterimage — рисуем полупрозрачно
+            if (world.Has<Combat.AfterimageParticle>(id))
+            {
+                ref var after = ref world.Get<Combat.AfterimageParticle>(id);
+                var dimTint = new Color(sprite.Tint.R, sprite.Tint.G, sprite.Tint.B,
+                    (byte)(after.Alpha * 255));
+                Raylib.DrawRectangle(
+                    (int)pos.X, (int)pos.Y,
+                    sprite.Width * scale, sprite.Height * scale, dimTint);
+                continue;
+            }
+
+            // DamageFlash — белый оверлей при попадании
+            var tint = sprite.Tint;
+            if (world.Has<Combat.DamageFlash>(id))
+                tint = Color.White;
+
+            // Enemy death — плавное затухание спрайта
+            if (world.Has<Combat.EnemyDeathState>(id))
+            {
+                ref var death = ref world.Get<Combat.EnemyDeathState>(id);
+                float lifeFraction = death.Lifetime > 0f
+                    ? Math.Clamp(death.TimeRemaining / death.Lifetime, 0f, 1f)
+                    : 0f;
+                tint = new Color(tint.R, tint.G, tint.B, (byte)(255 * lifeFraction));
+            }
+
             Raylib.DrawRectangle(
                 (int)pos.X, (int)pos.Y,
                 sprite.Width * scale,
                 sprite.Height * scale,
-                sprite.Tint
+                tint
             );
         }
     }

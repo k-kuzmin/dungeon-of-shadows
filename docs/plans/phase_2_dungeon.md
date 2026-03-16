@@ -101,14 +101,14 @@ DungeonGenerator.Generate(floor, config, seed)
 | `src/Dungeon/Generation/RoomPlacer.cs` | Размещение комнат в листьях |
 | `src/Dungeon/Generation/CorridorCarver.cs` | L-образные коридоры |
 | `src/Dungeon/Generation/DecorationPainter.cs` | Случайные декорации |
-| `src/ECS/IRenderTickable.cs` | Интерфейс рендер-подсистем + `RenderPhase` |
-| `src/ECS/Systems/FovSystem.cs` | Bresenham FOV, пост-проход для стен |
-| `src/ECS/Systems/FloorTransitionSystem.cs` | Переход между этажами |
-| `src/ECS/Systems/TileRenderSystem.cs` | Рендер тайлов + декор + FOV |
-| `src/ECS/Systems/EntityRenderSystem.cs` | Рендер сущностей + FOV |
-| `src/ECS/Systems/DebugRenderSystem.cs` | Сетка + коллайдеры |
-| `src/ECS/Systems/HudRenderSystem.cs` | FPS, этаж, мини-карта, fullscreen карта |
-| `src/ECS/Systems/RenderSystem.cs` | Обёртка: BeginDrawing/EndDrawing |
+| `src/ECS/Core/IRenderTickable.cs` | Интерфейс рендер-подсистем + `RenderPhase` |
+| `src/ECS/Exploration/FovSystem.cs` | Bresenham FOV, пост-проход для стен |
+| `src/ECS/Exploration/FloorTransitionSystem.cs` | Переход между этажами |
+| `src/ECS/Rendering/TileRenderSystem.cs` | Рендер тайлов + декор + FOV |
+| `src/ECS/Rendering/EntityRenderSystem.cs` | Рендер сущностей + FOV |
+| `src/ECS/Rendering/DebugRenderSystem.cs` | Сетка + коллайдеры |
+| `src/ECS/Rendering/HudRenderSystem.cs` | FPS, этаж, мини-карта, fullscreen карта |
+| `src/ECS/Rendering/RenderSystem.cs` | Обёртка: BeginDrawing/EndDrawing |
 
 ### Изменённые файлы из Фазы 1
 

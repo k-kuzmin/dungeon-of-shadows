@@ -1,7 +1,7 @@
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
 
-namespace DungeonOfShadows.ECS.Systems;
+namespace DungeonOfShadows.ECS.Exploration.Systems;
 
 /// <summary>
 /// Система тумана войны. Bresenham raycasting.
@@ -88,7 +88,6 @@ public class FovSystem : ITickable
                 if (map.Tiles[x, y].Type != TileType.Wall) continue;
                 if (map.Tiles[x, y].Visibility == 2) continue;
 
-                // Если хотя бы один сосед — видимый не-стена, подсвечиваем
                 if (HasVisibleFloorNeighbor(map, x, y))
                     map.Tiles[x, y].Visibility = 2;
             }

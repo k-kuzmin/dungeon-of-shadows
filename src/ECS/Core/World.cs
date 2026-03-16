@@ -48,6 +48,9 @@ public class World
     public bool Has<T>(int id) where T : struct =>
         Store<T>().Has(id);
 
+    public void Remove<T>(int id) where T : struct =>
+        Store<T>().Remove(id);
+
     /// <summary>
     /// Zero-allocation query: fills a reusable buffer with matching entity IDs.
     /// </summary>

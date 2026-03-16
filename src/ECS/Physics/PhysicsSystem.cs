@@ -1,7 +1,7 @@
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
 
-namespace DungeonOfShadows.ECS.Systems;
+namespace DungeonOfShadows.ECS.Physics.Systems;
 
 public class PhysicsSystem : ITickable
 {

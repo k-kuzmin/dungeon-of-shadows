@@ -1,7 +1,7 @@
 using Raylib_cs;
 using DungeonOfShadows.Dungeon;
 using DungeonOfShadows.ECS;
-using DungeonOfShadows.ECS.Systems;
+using DungeonOfShadows.ECS.Combat;
 
 namespace DungeonOfShadows.Core;
 
@@ -59,6 +59,7 @@ public class Game
         _ctx.Map = result.Map;
 
         SpawnPlayer(result.SpawnRoom);
+        EnemySpawner.SpawnEnemies(_ctx.World, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
         SnapCameraToPlayer();
     }
 
@@ -79,6 +80,9 @@ public class Game
             ts * 0.1f, ts * 0.1f
         ));
         world.Add(playerId, new PlayerTag(_config.PlayerSpeed));
+        world.Add(playerId, new Health(_config.PlayerBaseHP, _config.PlayerBaseHP));
+        world.Add(playerId, new Stats(_config.PlayerBaseATK, _config.PlayerBaseDEF,
+            _config.PlayerSpeed, _config.PlayerBaseCrit));
     }
 
     private void SnapCameraToPlayer()

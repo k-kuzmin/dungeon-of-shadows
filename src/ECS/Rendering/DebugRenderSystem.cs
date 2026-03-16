@@ -1,7 +1,7 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
 
-namespace DungeonOfShadows.ECS.Systems;
+namespace DungeonOfShadows.ECS.Rendering.Systems;
 
 /// <summary>
 /// Рисует дебаг-оверлей: сетку и коллайдеры. World-space.

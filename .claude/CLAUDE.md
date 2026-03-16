@@ -51,7 +51,8 @@ public interface IRenderTickable
 
 ### Принципы систем
 
-- **Системы не вызывают друг друга** — общаются только через данные (`GameContext`, компоненты)
+- **Системы не вызывают друг друга** — общаются через данные (`GameContext`, компоненты, `DamageEvents`)
+- **Исключение**: системы могут принимать другие системы через DI для вызова конкретных API (напр. `CameraSystem.TriggerShake()`)
 - **Game.Run тикает все системы безусловно** — каждая система сама проверяет `GameState` если нужно
 - **Рендер-подсистемы** регистрируются отдельно через `AddRenderTickable`, не через `AddTickable`
 
@@ -60,7 +61,7 @@ public interface IRenderTickable
 Лёгкий ECS без внешних фреймворков:
 - **Entity** — int ID
 - **ComponentStore\<T\>** — генерик-хранилище. Новый компонент не требует правки `World`
-- **World** — `Add<T>()`, `Get<T>()`, `Has<T>()`, `Query<T>()`, `Query<T1,T2>()`
+- **World** — `Add<T>()`, `Get<T>()`, `Has<T>()`, `Remove<T>()`, `QueryInto<T>()`, `QueryInto<T1,T2>()`
 
 **Добавление нового компонента:** просто создать struct и использовать `world.Add<MyComponent>(id, data)`.
 
@@ -75,43 +76,71 @@ public interface IRenderTickable
 - `DungeonSeed` — сид генерации
 - `DebugMode` — режим отладки
 - `ShowFullMap` — полноэкранная карта
+- `DamageEvents` — очередь событий урона (заполняется MeleeAttackSystem/AISystem, дренится HealthSystem)
 
 ### GameConfig
 
 Все числовые параметры — в `GameConfig`. Не хардкодить магические числа в системах.
 
+### DamageEvent очередь
+
+Урон передаётся через `List<DamageEvent>` на `GameContext`:
+- **Продьюсеры**: `MeleeAttackSystem`, `AISystem` — пишут события
+- **Консьюмер**: `HealthSystem` — читает, применяет урон, спавнит DamageFlash/DamageNumber, дренит список
+
 ## Порядок тика систем
 
 ```
-InputSystem         → ввод (пропускает если не Playing)
-PhysicsSystem       → движение + коллизии (пропускает если не Playing)
-FloorTransitionSystem → переход между этажами (пропускает если не Playing)
-FovSystem           → туман войны (пропускает если не Playing)
-CameraSystem        → камера (тикает всегда)
-RenderSystem        → обёртка рендера (тикает всегда)
+InputSystem           → движение WASD (пропускает если не Playing)
+CombatInputSystem     → ЛКМ атака, Shift дэш (пропускает если не Playing)
+DashSystem            → дэш-движение, i-frames, afterimage, кулдауны
+PhysicsSystem         → движение + коллизии стен
+MeleeAttackSystem     → сектор атаки, DamageEvent-ы, screen shake
+AISystem              → state machine врагов, A* навигация, атака
+HealthSystem          → дренит DamageEvents, смерть, DamageFlash
+DamageNumberSystem    → float-up чисел урона
+FloorTransitionSystem → переход между этажами
+FovSystem             → туман войны
+CameraSystem          → камера (тикает всегда)
+RenderSystem          → обёртка рендера (тикает всегда)
   ├─ TileRenderSystem      (World) — тайлы + декор + FOV
-  ├─ EntityRenderSystem    (World) — сущности + FOV
+  ├─ EntityRenderSystem    (World) — сущности + FOV + DamageFlash + afterimage
+  ├─ CombatRenderSystem    (World) — дуга атаки, HP-бары врагов, числа урона
   ├─ DebugRenderSystem     (World) — сетка + коллайдеры
-  └─ HudRenderSystem       (Screen) — FPS, этаж, мини-карта
+  └─ HudRenderSystem       (Screen) — FPS, этаж, HP игрока, мини-карта
 ```
 
 ## Структура каталогов
 
 ```
 src/
-├── Core/          — Game, GameConfig, GameContext, GameState, ServiceRegistration
-├── ECS/           — World, ComponentStore, Components, ITickable, IRenderTickable
-│   └── Systems/   — InputSystem, PhysicsSystem, CameraSystem, RenderSystem,
-│                    FovSystem, FloorTransitionSystem,
-│                    TileRenderSystem, EntityRenderSystem, DebugRenderSystem, HudRenderSystem
-├── Dungeon/       — TileMap, Room, DungeonGenerator
-│   └── Generation/ — BspTree, RoomPlacer, CorridorCarver, DecorationPainter
-└── Program.cs     — точка входа
+├── Core/              — Game, GameConfig, GameContext, GameState, ServiceRegistration
+├── ECS/
+│   ├── Core/          — World, ComponentStore, ITickable, IRenderTickable
+│   ├── Player/        — PlayerTag, InputSystem
+│   ├── Physics/       — Position, Velocity, Collider, PhysicsSystem
+│   ├── Rendering/     — Sprite, RenderSystem, CameraSystem,
+│   │                    TileRenderSystem, EntityRenderSystem,
+│   │                    DebugRenderSystem, HudRenderSystem
+│   ├── Exploration/   — FovSystem, FloorTransitionSystem
+│   └── Combat/
+│       ├── Components/ — Health, Stats, EnemyTag, MeleeAttack, DashState,
+│       │                 DashCooldown, Invincible, DamageFlash,
+│       │                 DamageNumber, AfterimageParticle
+│       ├── Systems/    — CombatInputSystem, DashSystem, MeleeAttackSystem,
+│       │                 AISystem, HealthSystem, DamageNumberSystem,
+│       │                 CombatRenderSystem
+│       ├── DamageEvent.cs, DamageCalculator.cs
+│       ├── EnemyTemplate.cs, EnemyRegistry.cs, EnemySpawner.cs
+│       └── AStarPathfinder.cs
+├── Dungeon/           — TileMap, Room, DungeonGenerator
+│   └── Generation/    — BspTree, RoomPlacer, CorridorCarver, DecorationPainter
+└── Program.cs         — точка входа
 assets/
 ├── sprites/
 ├── sounds/
 └── data/
-docs/plans/        — планы по фазам разработки
+docs/plans/            — планы по фазам разработки
 ```
 
 ## Конвенции кода
@@ -120,11 +149,12 @@ docs/plans/        — планы по фазам разработки
 - **Язык комментариев и документации:** русский
 - **Логические системы** наследуют `ITickable` и получают `GameContext` через конструктор
 - **Рендер-подсистемы** наследуют `IRenderTickable`, указывают `RenderPhase`
-- **Компоненты** — struct, без логики
+- **Компоненты** — struct, без логики, каждый в отдельном файле
 - **Системы** — class, вся логика в `Tick(float dt)`
 - **Системы не зависят друг от друга** — только от `GameContext` и компонентов
 - **Конфигурация** — через `GameConfig`, не через константы в классах
 - **Новые зависимости** — регистрировать в `ServiceRegistration.cs`
+- **Фиче-ориентированная структура** — компоненты и системы группируются по фичам в `src/ECS/`
 
 ## Планы разработки
 
@@ -134,6 +164,8 @@ TDD — в `docs/dungeon_of_shadows_tdd.md`.
 ## Горячие клавиши (в игре)
 
 - WASD / стрелки — движение
+- ЛКМ — атака мечом (в направлении мыши)
+- L / Shift — дэш (в направлении движения)
 - E / Space — спуск по лестнице
 - Tab — полноэкранная карта (пауза)
 - F3 — дебаг-режим (сетка + коллайдеры)

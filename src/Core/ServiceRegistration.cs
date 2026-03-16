@@ -1,7 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using DungeonOfShadows.ECS;
-using DungeonOfShadows.ECS.Systems;
+using DungeonOfShadows.ECS.Combat;
+using DungeonOfShadows.ECS.Combat.Systems;
+using DungeonOfShadows.ECS.Player.Systems;
+using DungeonOfShadows.ECS.Physics.Systems;
+using DungeonOfShadows.ECS.Exploration.Systems;
+using DungeonOfShadows.ECS.Rendering.Systems;
 
 namespace DungeonOfShadows.Core;
 
@@ -16,9 +21,18 @@ public static class ServiceRegistration
         services.AddSingleton<GameContext>();
         services.AddSingleton<World>(sp => sp.GetRequiredService<GameContext>().World);
 
-        // Systems — registration order = tick order
+        // Combat services
+        services.AddSingleton<AStarPathfinder>();
+
+        // Logic systems — registration order = tick order
         services.AddTickable<InputSystem>();
+        services.AddTickable<CombatInputSystem>();
+        services.AddTickable<DashSystem>();
         services.AddTickable<PhysicsSystem>();
+        services.AddTickable<MeleeAttackSystem>();
+        services.AddTickable<AISystem>();
+        services.AddTickable<HealthSystem>();
+        services.AddTickable<DamageNumberSystem>();
         services.AddTickable<FloorTransitionSystem>();
         services.AddTickable<FovSystem>();
         services.AddTickable<CameraSystem>();
@@ -27,6 +41,7 @@ public static class ServiceRegistration
         // Render sub-systems — registration order = draw order
         services.AddRenderTickable<TileRenderSystem>();
         services.AddRenderTickable<EntityRenderSystem>();
+        services.AddRenderTickable<CombatRenderSystem>();
         services.AddRenderTickable<DebugRenderSystem>();
         services.AddRenderTickable<HudRenderSystem>();
 

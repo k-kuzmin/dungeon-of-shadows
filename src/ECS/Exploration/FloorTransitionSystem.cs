@@ -1,8 +1,9 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
+using DungeonOfShadows.ECS.Combat;
 
-namespace DungeonOfShadows.ECS.Systems;
+namespace DungeonOfShadows.ECS.Exploration.Systems;
 
 /// <summary>
 /// Обнаруживает стояние игрока на лестнице и выполняет переход на следующий этаж.
@@ -45,6 +46,15 @@ public class FloorTransitionSystem : ITickable
 
     private void DescendFloor(int playerId)
     {
+        var world = _ctx.World;
+
+        // Уничтожаем всех не-игроков
+        var toDestroy = world.AllEntities
+            .Where(id => id != playerId && world.IsAlive(id))
+            .ToList();
+        foreach (int id in toDestroy)
+            world.DestroyEntity(id);
+
         _ctx.CurrentFloor++;
 
         var result = DungeonGenerator.Generate(
@@ -53,12 +63,15 @@ public class FloorTransitionSystem : ITickable
         _ctx.Map = result.Map;
 
         int ts = _ctx.Config.ScaledTileSize;
-        ref var pos = ref _ctx.World.Get<Position>(playerId);
+        ref var pos = ref world.Get<Position>(playerId);
         pos.X = result.SpawnRoom.CenterX * ts;
         pos.Y = result.SpawnRoom.CenterY * ts;
 
-        ref var vel = ref _ctx.World.Get<Velocity>(playerId);
+        ref var vel = ref world.Get<Velocity>(playerId);
         vel.X = 0;
         vel.Y = 0;
+
+        // Спавн врагов на новом этаже
+        EnemySpawner.SpawnEnemies(world, _ctx.Map, _ctx.Config, _ctx.CurrentFloor, _ctx.DungeonSeed);
     }
 }

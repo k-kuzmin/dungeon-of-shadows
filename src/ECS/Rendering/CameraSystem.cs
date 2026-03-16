@@ -1,6 +1,7 @@
 using DungeonOfShadows.Core;
+using System.Numerics;
 
-namespace DungeonOfShadows.ECS.Systems;
+namespace DungeonOfShadows.ECS.Rendering.Systems;
 
 public class CameraSystem : ITickable
 {
@@ -26,7 +27,7 @@ public class CameraSystem : ITickable
             int id = _queryBuffer[0];
             ref var pos = ref world.Get<Position>(id);
             float half = _ctx.Config.ScaledTileSize / 2f;
-            var targetPos = new System.Numerics.Vector2(pos.X + half, pos.Y + half);
+            var targetPos = new Vector2(pos.X + half, pos.Y + half);
 
             float smoothing = 1f - MathF.Pow(_ctx.Config.CameraSmoothBase, dt);
             _ctx.Camera = _ctx.Camera with
@@ -42,7 +43,7 @@ public class CameraSystem : ITickable
             float intensity = _shakeAmplitude * (_shakeTimer / _ctx.Config.ScreenShakeDuration);
             _ctx.Camera = _ctx.Camera with
             {
-                Target = _ctx.Camera.Target + new System.Numerics.Vector2(
+                Target = _ctx.Camera.Target + new Vector2(
                     (float)(_rng.NextDouble() * 2 - 1) * intensity,
                     (float)(_rng.NextDouble() * 2 - 1) * intensity
                 )

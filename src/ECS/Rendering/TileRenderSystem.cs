@@ -2,7 +2,7 @@ using Raylib_cs;
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
 
-namespace DungeonOfShadows.ECS.Systems;
+namespace DungeonOfShadows.ECS.Rendering.Systems;
 
 /// <summary>
 /// Рисует тайлы карты с учётом FOV и декорации. World-space.

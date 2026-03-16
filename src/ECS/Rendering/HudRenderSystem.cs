@@ -2,10 +2,10 @@ using Raylib_cs;
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
 
-namespace DungeonOfShadows.ECS.Systems;
+namespace DungeonOfShadows.ECS.Rendering.Systems;
 
 /// <summary>
-/// Рисует HUD: FPS, этаж, дебаг-метку, мини-карту и полноэкранную карту. Screen-space.
+/// Рисует HUD: FPS, этаж, дебаг-метку, мини-карту, полноэкранную карту, HP игрока. Screen-space.
 /// </summary>
 public class HudRenderSystem : IRenderTickable
 {
@@ -23,6 +23,11 @@ public class HudRenderSystem : IRenderTickable
     private static readonly Color MinimapPlayer = new(60, 220, 75, 255);
     private static readonly Color MinimapBorder = new(150, 140, 130, 200);
 
+    // Цвета HP бара
+    private static readonly Color HpBarBg = new(40, 40, 40, 200);
+    private static readonly Color HpBarFull = new(50, 200, 60, 255);
+    private static readonly Color HpBarLow = new(200, 50, 50, 255);
+
     public HudRenderSystem(GameContext ctx)
     {
         _ctx = ctx;
@@ -38,6 +43,9 @@ public class HudRenderSystem : IRenderTickable
         if (_ctx.DebugMode)
             Raylib.DrawText("DEBUG MODE (F3)", 10, 30, 16, Color.Yellow);
 
+        // HP бар игрока
+        DrawPlayerHpBar();
+
         // Номер этажа
         Raylib.DrawText($"Floor {_ctx.CurrentFloor}", 10, config.ScreenHeight - 30, 20, Color.White);
 
@@ -46,6 +54,38 @@ public class HudRenderSystem : IRenderTickable
             DrawFullscreenMap();
         else
             DrawMinimap();
+    }
+
+    private void DrawPlayerHpBar()
+    {
+        var world = _ctx.World;
+        world.QueryInto<PlayerTag, Combat.Health>(_queryBuffer);
+        if (_queryBuffer.Count == 0) return;
+
+        ref var health = ref world.Get<Combat.Health>(_queryBuffer[0]);
+
+        int barX = 10;
+        int barY = _ctx.DebugMode ? 50 : 30;
+        int barW = 200;
+        int barH = 16;
+
+        float fraction = (float)health.HP / health.MaxHP;
+
+        // Интерполяция цвета от красного к зелёному
+        var barColor = new Raylib_cs.Color(
+            (byte)(HpBarLow.R + (HpBarFull.R - HpBarLow.R) * fraction),
+            (byte)(HpBarLow.G + (HpBarFull.G - HpBarLow.G) * fraction),
+            (byte)(HpBarLow.B + (HpBarFull.B - HpBarLow.B) * fraction),
+            (byte)255
+        );
+
+        Raylib.DrawRectangle(barX, barY, barW, barH, HpBarBg);
+        Raylib.DrawRectangle(barX, barY, (int)(barW * fraction), barH, barColor);
+        Raylib.DrawRectangleLines(barX, barY, barW, barH, Color.White);
+
+        string hpText = $"{health.HP}/{health.MaxHP}";
+        int textW = Raylib.MeasureText(hpText, 14);
+        Raylib.DrawText(hpText, barX + barW / 2 - textW / 2, barY + 1, 14, Color.White);
     }
 
     private void DrawMinimap()

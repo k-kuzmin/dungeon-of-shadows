@@ -1,7 +1,7 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
 
-namespace DungeonOfShadows.ECS.Systems;
+namespace DungeonOfShadows.ECS.Player.Systems;
 
 public class InputSystem : ITickable
 {
