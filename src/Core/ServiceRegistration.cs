@@ -47,6 +47,7 @@ public static class ServiceRegistration
         services.AddInterfaces<DamageNumberSystem>();
         services.AddInterfaces<FloorTransitionSystem>();
         services.AddInterfaces<FovSystem>();
+        services.AddInterfaces<AnimationSystem>();
         services.AddInterfaces<CameraSystem>();
         services.AddInterfaces<RenderSystem>();
 

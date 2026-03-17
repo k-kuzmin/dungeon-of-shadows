@@ -5,7 +5,7 @@ using DungeonOfShadows.Dungeon;
 namespace DungeonOfShadows.ECS.Rendering.Systems;
 
 /// <summary>
-/// Рисует тайлы карты спрайтами с учётом FOV, автотайлинга, оверлеев трещин и анимации факелов.
+/// Рисует тайлы карты спрайтами с учётом FOV, автотайлинга и оверлеев трещин.
 /// </summary>
 public class TileRenderSystem : IRenderTickable
 {
@@ -37,7 +37,6 @@ public class TileRenderSystem : IRenderTickable
         var wallsTex = _assets.GetTexture("walls_floor");
         var crackFloorTex = _assets.GetTexture("cracks_floor");
         var crackWallTex = _assets.GetTexture("cracks_walls");
-        var fireTex = _assets.GetTexture("fire_large");
         var objectsTex = _assets.GetTexture("objects");
 
         // Frustum culling
@@ -71,7 +70,6 @@ public class TileRenderSystem : IRenderTickable
                         DrawFloor(wallsTex, ref tile, destX, destY, ts, scale, tint);
                         break;
                     case TileType.StairDown:
-                        // Пол под лестницей + спрайт лестницы
                         DrawFloorBase(wallsTex, destX, destY, ts, scale, tint);
                         DrawStair(objectsTex, destX, destY, ts, scale, tint);
                         break;
@@ -88,31 +86,6 @@ public class TileRenderSystem : IRenderTickable
                     var crackTex = isWall ? crackWallTex : crackFloorTex;
                     var destRect = new Rectangle(destX, destY, ts, ts);
                     Raylib.DrawTexturePro(crackTex, crackSrc, destRect, System.Numerics.Vector2.Zero, 0f, FullTint);
-                }
-
-                // Декорации — только на видимых тайлах
-                if (tile.Visibility == 2)
-                {
-                    var deco = map.Decorations[x, y];
-                    if (deco == DecorationType.Torch)
-                    {
-                        DrawTorch(map, fireTex, x, y, dt, ts, scale, config);
-                    }
-                    // Bones и Puddle — пока цветовые заглушки
-                    else if (deco == DecorationType.Bones)
-                    {
-                        int sz = ts / 4;
-                        Raylib.DrawRectangle((int)destX + ts / 2 - sz / 2,
-                            (int)destY + ts / 2 - sz / 2, sz, sz,
-                            new Color(200, 190, 170, 180));
-                    }
-                    else if (deco == DecorationType.Puddle)
-                    {
-                        int sz = ts / 4;
-                        Raylib.DrawRectangle((int)destX + ts / 2 - sz / 2,
-                            (int)destY + ts / 2 - sz / 2, sz, sz,
-                            new Color(40, 60, 100, 160));
-                    }
                 }
             }
         }
@@ -137,7 +110,6 @@ public class TileRenderSystem : IRenderTickable
     private static void DrawFloorBase(Texture2D tex, float dx, float dy,
         int ts, float scale, Color tint)
     {
-        // Базовый пол (variant 0) под лестницей
         var src = TileAtlas.GetFloorSource(0);
         var dest = new Rectangle(dx, dy, ts, ts);
         Raylib.DrawTexturePro(tex, src, dest, System.Numerics.Vector2.Zero, 0f, tint);
@@ -146,34 +118,9 @@ public class TileRenderSystem : IRenderTickable
     private static void DrawStair(Texture2D tex, float dx, float dy,
         int ts, float scale, Color tint)
     {
-        // Лестница из Objects.png — 16x32 → масштабированная ts x ts*2
-        // Рисуем так, чтобы нижняя часть лестницы была на тайле
         var src = TileAtlas.GetStairSource();
         var dest = new Rectangle(dx, dy - ts, ts, ts * 2);
         Raylib.DrawTexturePro(tex, src, dest, System.Numerics.Vector2.Zero, 0f, tint);
-    }
-
-    private void DrawTorch(TileMap map, Texture2D fireTex, int x, int y, float dt,
-        int ts, float scale, GameConfig config)
-    {
-        int idx = y * map.Width + x;
-
-        // Обновляем анимацию
-        map.TileAnimTimers[idx] += dt;
-        if (map.TileAnimTimers[idx] >= config.TorchFrameDuration)
-        {
-            map.TileAnimTimers[idx] -= config.TorchFrameDuration;
-            map.TileAnimFrames[idx] = (byte)((map.TileAnimFrames[idx] + 1) % config.TorchFrameCount);
-        }
-
-        var src = TileAtlas.GetTorchSource(map.TileAnimFrames[idx]);
-        // Факел 32x48 рисуется с центром на тайле, выходя за пределы вверх
-        float torchW = config.TorchSpriteWidth * scale;
-        float torchH = config.TorchSpriteHeight * scale;
-        float destX = x * ts + ts / 2f - torchW / 2f;
-        float destY = y * ts + ts - torchH; // основание факела на нижнем крае тайла
-        var dest = new Rectangle(destX, destY, torchW, torchH);
-        Raylib.DrawTexturePro(fireTex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
     }
 
     internal static Color DarkenColor(Color c, float factor)

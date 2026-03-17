@@ -95,6 +95,7 @@ public class FloorLifecycleSystem : IStartable, ITickable
         EnemySpawner.SpawnEnemies(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
         ChestSpawner.SpawnChests(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
         DecorationObjectSpawner.SpawnObjects(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
+        TorchSpawner.SpawnTorches(world, _ctx.Map, _config);
     }
 
     private void SpawnPlayer(Room spawnRoom)

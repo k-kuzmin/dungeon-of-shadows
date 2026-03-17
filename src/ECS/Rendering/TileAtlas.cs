@@ -11,6 +11,14 @@ namespace DungeonOfShadows.ECS.Rendering;
 public static class TileAtlas
 {
     private const int T = 16; // размер тайла в спрайтшите
+    private const byte N = 1;
+    private const byte NE = 2;
+    private const byte E = 4;
+    private const byte SE = 8;
+    private const byte S = 16;
+    private const byte SW = 32;
+    private const byte W = 64;
+    private const byte NW = 128;
 
     // ── walls_floor.png: blob autotile для стен ──
     // Раскладка стен в этом тайлсете многослойная:
@@ -112,15 +120,15 @@ public static class TileAtlas
     // Простой сундук: 5 кадров по 16x16 начиная с (0, 8*16)
     private static readonly Rectangle[] _chestClosedFrames =
     {
-        new(0, 128, T, T),
+        new(0, 64, T, T),
     };
     private static readonly Rectangle[] _chestOpenFrames =
     {
-        new(0, 128, T, T),   // закрытый
-        new(T, 128, T, T),   // приоткрытый
-        new(T*2, 128, T, T), // полуоткрытый
-        new(T*3, 128, T, T), // почти открытый
-        new(T*4, 128, T, T), // полностью открытый
+        new(0, 64, T, T),   // закрытый
+        new(T, 64, T, T),   // приоткрытый
+        new(T*2, 64, T, T), // полуоткрытый
+        new(T*3, 64, T, T), // почти открытый
+        new(T*4, 64, T, T), // полностью открытый
     };
 
     // ── Objects.png: декоративные объекты (24 cols x 9 rows) ──
@@ -136,8 +144,9 @@ public static class TileAtlas
     /// <summary>Возвращает source rect для стены по blob autotile индексу (0-46).</summary>
     public static Rectangle GetWallSource(byte autotileIndex)
     {
-        var (col, row) = _wallCoords[Math.Min(autotileIndex, (byte)46)];
-        return new Rectangle(col * T, row * T, T, T);
+        byte idx = Math.Min(autotileIndex, (byte)46);
+        byte mask = _canonicalMasks[idx];
+        return GetWallSourceFromMask(mask);
     }
 
     /// <summary>Возвращает source rect для верхней поверхности стены (wall-top cap).</summary>
@@ -203,6 +212,109 @@ public static class TileAtlas
     public static Rectangle GetDecoObjectSource(int atlasCol, int atlasRow, int srcWidth, int srcHeight)
     {
         return new Rectangle(atlasCol * T, atlasRow * T, srcWidth, srcHeight);
+    }
+
+    private static readonly byte[] _canonicalMasks =
+    {
+        0,
+        N,
+        E,
+        N | E,
+        N | NE | E,
+        S,
+        N | S,
+        E | S,
+        E | SE | S,
+        N | E | S,
+        N | NE | E | S,
+        N | E | SE | S,
+        N | NE | E | SE | S,
+        W,
+        N | W,
+        N | W | NW,
+        E | W,
+        N | E | W,
+        N | NE | E | W,
+        N | E | W | NW,
+        N | NE | E | W | NW,
+        S | W,
+        S | SW | W,
+        N | S | W,
+        N | S | SW | W,
+        N | S | W | NW,
+        N | S | SW | W | NW,
+        E | S | W,
+        E | SE | S | W,
+        E | S | SW | W,
+        E | SE | S | SW | W,
+        N | E | S | W,
+        N | NE | E | S | W,
+        N | E | SE | S | W,
+        N | E | S | SW | W,
+        N | E | S | W | NW,
+        N | NE | E | SE | S | W,
+        N | NE | E | S | SW | W,
+        N | NE | E | S | W | NW,
+        N | E | SE | S | SW | W,
+        N | E | SE | S | W | NW,
+        N | E | S | SW | W | NW,
+        N | NE | E | SE | S | SW | W,
+        N | NE | E | SE | S | W | NW,
+        N | NE | E | S | SW | W | NW,
+        N | E | SE | S | SW | W | NW,
+        N | NE | E | SE | S | SW | W | NW,
+    };
+
+    private static Rectangle GetWallSourceFromMask(byte mask)
+    {
+        bool n = (mask & N) != 0;
+        bool e = (mask & E) != 0;
+        bool s = (mask & S) != 0;
+        bool w = (mask & W) != 0;
+        int cardinalCount = (n ? 1 : 0) + (e ? 1 : 0) + (s ? 1 : 0) + (w ? 1 : 0);
+
+        if (cardinalCount == 0) return new Rectangle(6 * T, 1 * T, T, T);
+
+        if (cardinalCount == 1)
+        {
+            if (n) return new Rectangle(2 * T, 3 * T, T, T);
+            if (e) return new Rectangle(1 * T, 2 * T, T, T);
+            if (s) return new Rectangle(2 * T, 1 * T, T, T);
+            return new Rectangle(3 * T, 2 * T, T, T);
+        }
+
+        if (cardinalCount == 2)
+        {
+            if ((n && s) || (e && w)) return new Rectangle(2 * T, 4 * T, T, T);
+            if (n && e) return new Rectangle(1 * T, 3 * T, T, T);
+            if (e && s) return new Rectangle(1 * T, 1 * T, T, T);
+            if (s && w) return new Rectangle(3 * T, 1 * T, T, T);
+            return new Rectangle(3 * T, 3 * T, T, T);
+        }
+
+        if (cardinalCount == 3)
+        {
+            if (!n) return new Rectangle(2 * T, 1 * T, T, T);
+            if (!e) return new Rectangle(3 * T, 2 * T, T, T);
+            if (!s) return new Rectangle(2 * T, 3 * T, T, T);
+            return new Rectangle(1 * T, 2 * T, T, T);
+        }
+
+        bool ne = (mask & NE) != 0;
+        bool se = (mask & SE) != 0;
+        bool sw = (mask & SW) != 0;
+        bool nw = (mask & NW) != 0;
+
+        int missingCorners = (ne ? 0 : 1) + (se ? 0 : 1) + (sw ? 0 : 1) + (nw ? 0 : 1);
+        if (missingCorners == 1)
+        {
+            if (!ne) return new Rectangle(9 * T, 1 * T, T, T);
+            if (!se) return new Rectangle(9 * T, 2 * T, T, T);
+            if (!sw) return new Rectangle(7 * T, 0 * T, T, T);
+            return new Rectangle(7 * T, 1 * T, T, T);
+        }
+
+        return new Rectangle(2 * T, 2 * T, T, T);
     }
 
     // ═══════════════════════════════════════════════════

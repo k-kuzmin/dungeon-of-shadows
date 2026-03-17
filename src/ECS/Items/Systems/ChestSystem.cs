@@ -1,5 +1,6 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
+using DungeonOfShadows.ECS.Rendering;
 
 namespace DungeonOfShadows.ECS.Items.Systems;
 
@@ -61,9 +62,13 @@ public class ChestSystem : ITickable
 
         ref var targetChest = ref world.Get<Chest>(nearestId);
         targetChest.Opened = true;
-        targetChest.AnimTimer = 0f;
-        targetChest.AnimFrame = 0;
-        targetChest.AnimDone = false;
+
+        // Переключаем анимацию на клип открытия
+        if (world.Has<Animator>(nearestId))
+        {
+            ref var animator = ref world.Get<Animator>(nearestId);
+            animator.CurrentClip = "open";
+        }
 
         if (_db.TryGetDefinition(targetChest.GuaranteedDefinitionId, out var def))
         {

@@ -50,19 +50,12 @@ public class TileMap
     public DecorationType[,] Decorations { get; }
     public IReadOnlyList<Room> Rooms { get; internal set; } = Array.Empty<Room>();
 
-    /// <summary>Таймеры анимации тайлов (факелы). Индексация: y * Width + x.</summary>
-    public float[] TileAnimTimers { get; private set; } = null!;
-    /// <summary>Текущий кадр анимации тайла. Индексация: y * Width + x.</summary>
-    public byte[] TileAnimFrames { get; private set; } = null!;
-
     public TileMap(int width, int height)
     {
         Width = width;
         Height = height;
         Tiles = new Tile[width, height];
         Decorations = new DecorationType[width, height];
-        TileAnimTimers = new float[width * height];
-        TileAnimFrames = new byte[width * height];
     }
 
     public bool InBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;

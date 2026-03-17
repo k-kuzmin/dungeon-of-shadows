@@ -51,15 +51,13 @@ public class ItemRenderSystem : IRenderTickable
             Raylib.DrawRectangle((int)pos.X - half, (int)pos.Y - half, size, size, color);
         }
 
-        // Сундуки — спрайтовые с анимацией открытия
-        var chestTex = _assets.GetTexture("doors_chest");
+        // Сундуки — спрайтовые, анимация через Animation компонент
         float scale = _config.RenderScale;
 
         _world.QueryInto<Chest, Position>(_chestBuffer);
         for (int i = 0; i < _chestBuffer.Count; i++)
         {
             int id = _chestBuffer[i];
-            ref var chest = ref _world.Get<Chest>(id);
             ref var pos = ref _world.Get<Position>(id);
 
             // FOV check
@@ -68,25 +66,14 @@ public class ItemRenderSystem : IRenderTickable
             if (map.InBounds(tx, ty) && map.Tiles[tx, ty].Visibility < 2)
                 continue;
 
-            // Обновляем анимацию открытия
-            if (chest.Opened && !chest.AnimDone)
-            {
-                chest.AnimTimer += dt;
-                if (chest.AnimTimer >= _config.ChestOpenFrameDuration)
-                {
-                    chest.AnimTimer -= _config.ChestOpenFrameDuration;
-                    chest.AnimFrame++;
-                    if (chest.AnimFrame >= _config.ChestOpenFrameCount)
-                    {
-                        chest.AnimFrame = (byte)(_config.ChestOpenFrameCount - 1);
-                        chest.AnimDone = true;
-                    }
-                }
-            }
+            if (!_world.Has<Animation>(id)) continue;
+            ref var anim = ref _world.Get<Animation>(id);
+            if (anim.Clip == null) continue;
 
-            var src = TileAtlas.GetChestSource(chest.AnimFrame, chest.Opened);
-            float destW = _config.ChestSpriteSize * scale;
-            float destH = _config.ChestSpriteSize * scale;
+            var chestTex = _assets.GetTexture(anim.Clip.TextureId);
+            var src = anim.Clip.Frames[anim.FrameIndex];
+            float destW = src.Width * scale;
+            float destH = src.Height * scale;
             float destX = pos.X + ts / 2f - destW / 2f;
             float destY = pos.Y + ts - destH;
             var dest = new Rectangle(destX, destY, destW, destH);

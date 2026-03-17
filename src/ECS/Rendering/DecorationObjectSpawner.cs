@@ -11,16 +11,15 @@ public static class DecorationObjectSpawner
     // Определения объектов: (тип, col в Objects.png, row, ширина, высота в px)
     private static readonly (DecorationObjectType Type, int Col, int Row, int W, int H)[] _templates =
     {
-        (DecorationObjectType.Barrel,      4, 2, 16, 16),
-        (DecorationObjectType.Barrel,      5, 2, 16, 16),
-        (DecorationObjectType.BarrelBroken, 6, 2, 16, 16),
+        (DecorationObjectType.Barrel,      4, 0, 16, 16),
+        (DecorationObjectType.Barrel,      5, 0, 16, 16),
+        (DecorationObjectType.BarrelBroken, 6, 0, 16, 16),
         (DecorationObjectType.Crate,       14, 0, 16, 16),
-        (DecorationObjectType.Crate,       14, 2, 16, 16),
-        (DecorationObjectType.CrateStack,  15, 0, 32, 32),
-        (DecorationObjectType.Sack,        19, 2, 16, 16),
-        (DecorationObjectType.Sack,        20, 2, 16, 16),
-        (DecorationObjectType.Rock,        8, 0, 16, 16),
+        (DecorationObjectType.Crate,       15, 0, 16, 16),
+        (DecorationObjectType.Sack,        19, 0, 16, 16),
+        (DecorationObjectType.Sack,        20, 0, 16, 16),
         (DecorationObjectType.Rock,        9, 0, 16, 16),
+        (DecorationObjectType.Rock,        12, 0, 16, 16),
         (DecorationObjectType.RockSmall,   10, 0, 16, 16),
         (DecorationObjectType.RockSmall,   11, 0, 16, 16),
     };
@@ -63,7 +62,12 @@ public static class DecorationObjectSpawner
                         SrcHeight = template.H,
                     });
 
-                    map.Tiles[x, y].Walkable = false;
+                    bool blocksTile = template.Type is DecorationObjectType.Barrel
+                        or DecorationObjectType.BarrelBroken
+                        or DecorationObjectType.Crate
+                        or DecorationObjectType.CrateStack;
+                    if (blocksTile)
+                        map.Tiles[x, y].Walkable = false;
                 }
             }
         }
