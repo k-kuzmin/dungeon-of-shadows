@@ -3,6 +3,7 @@ using DungeonOfShadows.Dungeon;
 using DungeonOfShadows.ECS;
 using DungeonOfShadows.ECS.Combat;
 using DungeonOfShadows.ECS.Items;
+using DungeonOfShadows.ECS.Rendering;
 
 namespace DungeonOfShadows.Core;
 
@@ -26,6 +27,7 @@ public class Game
     {
         Raylib.InitWindow(_config.ScreenWidth, _config.ScreenHeight, _config.Title);
         Raylib.SetTargetFPS(_config.TargetFPS);
+        _ctx.Textures.LoadAll();
 
         Init();
 
@@ -48,6 +50,7 @@ public class Game
                 _tickables[i].Tick(dt);
         }
 
+        _ctx.Textures.UnloadAll();
         Raylib.CloseWindow();
     }
 
@@ -62,6 +65,7 @@ public class Game
         SpawnPlayer(result.SpawnRoom);
         EnemySpawner.SpawnEnemies(_ctx.World, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
         ChestSpawner.SpawnChests(_ctx.World, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
+        DecorationObjectSpawner.SpawnObjects(_ctx.World, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
         SnapCameraToPlayer();
     }
 

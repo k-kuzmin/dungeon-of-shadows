@@ -22,7 +22,7 @@ internal static class DecorationPainter
                 if (nearWall && roll < 30)
                     map.Decorations[x, y] = DecorationType.Torch;
                 else if (roll < 55)
-                    map.Decorations[x, y] = DecorationType.Crack;
+                    map.Decorations[x, y] = DecorationType.CrackFloor;
                 else if (roll < 80)
                     map.Decorations[x, y] = DecorationType.Bones;
                 else

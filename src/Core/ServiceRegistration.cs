@@ -51,6 +51,7 @@ public static class ServiceRegistration
         services.AddRenderTickable<EntityRenderSystem>();
         services.AddRenderTickable<CombatRenderSystem>();
         services.AddRenderTickable<ItemRenderSystem>();
+        services.AddRenderTickable<DecorationObjectRenderSystem>();
         services.AddRenderTickable<DebugRenderSystem>();
         services.AddRenderTickable<HudRenderSystem>();
         services.AddRenderTickable<InventoryRenderSystem>();

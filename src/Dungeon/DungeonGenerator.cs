@@ -81,7 +81,10 @@ public static class DungeonGenerator
         // 9. Декорации
         DecorationPainter.Paint(map, config.DecorationChancePercent, rng);
 
-        // 10. Сохраняем список комнат на карте
+        // 10. Автотайлинг — baked индексы стен, пола, оверлеев
+        AutotileComputer.ComputeAll(map, config.FloorVariantCount, rng);
+
+        // 11. Сохраняем список комнат на карте
         map.Rooms = rooms;
 
         var spawnRoom = rooms.First(r => r.Type == RoomType.Spawn);

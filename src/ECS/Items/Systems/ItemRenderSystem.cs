@@ -1,5 +1,6 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
+using DungeonOfShadows.ECS.Rendering;
 
 namespace DungeonOfShadows.ECS.Items.Systems;
 
@@ -20,6 +21,10 @@ public class ItemRenderSystem : IRenderTickable
 
     public void Tick(float dt)
     {
+        var map = _ctx.Map;
+        int ts = _ctx.Config.ScaledTileSize;
+
+        // Предметы на земле — пока цветовые прямоугольники
         _world.QueryInto<ItemOnGround, Position>(_itemBuffer);
         for (int i = 0; i < _itemBuffer.Count; i++)
         {
@@ -28,12 +33,23 @@ public class ItemRenderSystem : IRenderTickable
                 continue;
 
             ref var pos = ref _world.Get<Position>(id);
+
+            // FOV check
+            int tx = (int)((pos.X + ts / 2f) / ts);
+            int ty = (int)((pos.Y + ts / 2f) / ts);
+            if (map.InBounds(tx, ty) && map.Tiles[tx, ty].Visibility < 2)
+                continue;
+
             ref var stack = ref _world.Get<ItemStack>(id);
             Color color = GetRarityColor(stack.Rarity);
             int half = _ctx.Config.GroundItemDrawHalfSize;
             int size = _ctx.Config.GroundItemDrawSize;
             Raylib.DrawRectangle((int)pos.X - half, (int)pos.Y - half, size, size, color);
         }
+
+        // Сундуки — спрайтовые с анимацией открытия
+        var chestTex = _ctx.Textures.Get("doors_chest");
+        float scale = _ctx.Config.RenderScale;
 
         _world.QueryInto<Chest, Position>(_chestBuffer);
         for (int i = 0; i < _chestBuffer.Count; i++)
@@ -42,16 +58,35 @@ public class ItemRenderSystem : IRenderTickable
             ref var chest = ref _world.Get<Chest>(id);
             ref var pos = ref _world.Get<Position>(id);
 
-            var color = chest.Opened
-                ? new Color(120, 90, 50, 255)
-                : new Color(170, 120, 50, 255);
+            // FOV check
+            int tx = (int)((pos.X + ts / 2f) / ts);
+            int ty = (int)((pos.Y + ts / 2f) / ts);
+            if (map.InBounds(tx, ty) && map.Tiles[tx, ty].Visibility < 2)
+                continue;
 
-            int offX = _ctx.Config.ChestDrawOffsetX;
-            int offY = _ctx.Config.ChestDrawOffsetY;
-            int w = _ctx.Config.ChestDrawWidth;
-            int h = _ctx.Config.ChestDrawHeight;
-            Raylib.DrawRectangle((int)pos.X - offX, (int)pos.Y - offY, w, h, color);
-            Raylib.DrawRectangleLines((int)pos.X - offX, (int)pos.Y - offY, w, h, Color.Black);
+            // Обновляем анимацию открытия
+            if (chest.Opened && !chest.AnimDone)
+            {
+                chest.AnimTimer += dt;
+                if (chest.AnimTimer >= _ctx.Config.ChestOpenFrameDuration)
+                {
+                    chest.AnimTimer -= _ctx.Config.ChestOpenFrameDuration;
+                    chest.AnimFrame++;
+                    if (chest.AnimFrame >= _ctx.Config.ChestOpenFrameCount)
+                    {
+                        chest.AnimFrame = (byte)(_ctx.Config.ChestOpenFrameCount - 1);
+                        chest.AnimDone = true;
+                    }
+                }
+            }
+
+            var src = TileAtlas.GetChestSource(chest.AnimFrame, chest.Opened);
+            float destW = _ctx.Config.ChestSpriteSize * scale;
+            float destH = _ctx.Config.ChestSpriteSize * scale;
+            float destX = pos.X + ts / 2f - destW / 2f;
+            float destY = pos.Y + ts - destH;
+            var dest = new Rectangle(destX, destY, destW, destH);
+            Raylib.DrawTexturePro(chestTex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
         }
     }
 

@@ -3,6 +3,7 @@ using DungeonOfShadows.Dungeon;
 using DungeonOfShadows.ECS;
 using DungeonOfShadows.ECS.Combat;
 using DungeonOfShadows.ECS.Items;
+using DungeonOfShadows.ECS.Rendering;
 
 namespace DungeonOfShadows.Core;
 
@@ -33,6 +34,9 @@ public class GameContext
     /// Очередь запросов на дроп предметов при смерти врагов.
     /// </summary>
     public List<ItemDropRequest> ItemDropRequests { get; } = new(32);
+
+    /// <summary>Менеджер текстур. LoadAll() вызывается после InitWindow().</summary>
+    public TextureManager Textures { get; } = new();
 
     public GameContext(GameConfig config)
     {

@@ -3,6 +3,7 @@ using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
 using DungeonOfShadows.ECS.Combat;
 using DungeonOfShadows.ECS.Items;
+using DungeonOfShadows.ECS.Rendering;
 
 namespace DungeonOfShadows.ECS.Exploration.Systems;
 
@@ -76,8 +77,9 @@ public class FloorTransitionSystem : ITickable
         vel.X = 0;
         vel.Y = 0;
 
-        // Спавн врагов на новом этаже
+        // Спавн врагов, сундуков, декор-объектов на новом этаже
         EnemySpawner.SpawnEnemies(world, _ctx.Map, _ctx.Config, _ctx.CurrentFloor, _ctx.DungeonSeed);
         ChestSpawner.SpawnChests(world, _ctx.Map, _ctx.Config, _ctx.CurrentFloor, _ctx.DungeonSeed);
+        DecorationObjectSpawner.SpawnObjects(world, _ctx.Map, _ctx.Config, _ctx.CurrentFloor, _ctx.DungeonSeed);
     }
 }

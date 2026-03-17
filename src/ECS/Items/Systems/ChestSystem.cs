@@ -57,6 +57,9 @@ public class ChestSystem : ITickable
 
         ref var targetChest = ref world.Get<Chest>(nearestId);
         targetChest.Opened = true;
+        targetChest.AnimTimer = 0f;
+        targetChest.AnimFrame = 0;
+        targetChest.AnimDone = false;
 
         if (_db.TryGetDefinition(targetChest.GuaranteedDefinitionId, out var def))
         {

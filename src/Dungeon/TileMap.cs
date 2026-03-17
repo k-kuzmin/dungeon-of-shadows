@@ -12,7 +12,8 @@ public enum DecorationType
 {
     None,
     Torch,
-    Crack,
+    CrackFloor,
+    CrackWall,
     Bones,
     Puddle
 }
@@ -23,12 +24,21 @@ public struct Tile
     public bool Walkable;
     /// <summary>0 = Unknown, 1 = Explored, 2 = Visible (для FOV)</summary>
     public byte Visibility;
+    /// <summary>Индекс blob autotile (0-46) для стен. Вычисляется при генерации.</summary>
+    public byte AutotileIndex;
+    /// <summary>Вариант пола (0-N). Вычисляется при генерации.</summary>
+    public byte FloorVariant;
+    /// <summary>Индекс трещины-оверлея (0 = нет). Вычисляется при генерации.</summary>
+    public byte OverlayIndex;
 
     public Tile(TileType type)
     {
         Type = type;
         Walkable = type is TileType.Floor or TileType.StairDown;
-        Visibility = 0; // 0 = Unknown, раскрывается через FOV
+        Visibility = 0;
+        AutotileIndex = 0;
+        FloorVariant = 0;
+        OverlayIndex = 0;
     }
 }
 
@@ -40,12 +50,19 @@ public class TileMap
     public DecorationType[,] Decorations { get; }
     public IReadOnlyList<Room> Rooms { get; internal set; } = Array.Empty<Room>();
 
+    /// <summary>Таймеры анимации тайлов (факелы). Индексация: y * Width + x.</summary>
+    public float[] TileAnimTimers { get; private set; } = null!;
+    /// <summary>Текущий кадр анимации тайла. Индексация: y * Width + x.</summary>
+    public byte[] TileAnimFrames { get; private set; } = null!;
+
     public TileMap(int width, int height)
     {
         Width = width;
         Height = height;
         Tiles = new Tile[width, height];
         Decorations = new DecorationType[width, height];
+        TileAnimTimers = new float[width * height];
+        TileAnimFrames = new byte[width * height];
     }
 
     public bool InBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
