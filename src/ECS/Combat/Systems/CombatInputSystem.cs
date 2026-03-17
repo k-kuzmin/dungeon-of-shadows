@@ -9,19 +9,23 @@ namespace DungeonOfShadows.ECS.Combat.Systems;
 public class CombatInputSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _queryBuffer = new();
 
-    public CombatInputSystem(GameContext ctx)
+    public CombatInputSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
         if (_ctx.State != GameState.Playing) return;
 
-        var world = _ctx.World;
-        var config = _ctx.Config;
+        var world = _world;
+        var config = _config;
         int ts = config.ScaledTileSize;
 
         world.QueryInto<PlayerTag, Position>(_queryBuffer);

@@ -7,22 +7,26 @@ namespace DungeonOfShadows.ECS.Items.Systems;
 public class ItemRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
+    private readonly IAssetProvider _assets;
     private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _itemBuffer = new();
     private readonly List<int> _chestBuffer = new();
 
     public RenderPhase Phase => RenderPhase.World;
 
-    public ItemRenderSystem(GameContext ctx)
+    public ItemRenderSystem(GameContext ctx, World world, GameConfig config, IAssetProvider assets)
     {
         _ctx = ctx;
-        _world = ctx.World;
+        _assets = assets;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
         var map = _ctx.Map;
-        int ts = _ctx.Config.ScaledTileSize;
+        int ts = _config.ScaledTileSize;
 
         // Предметы на земле — пока цветовые прямоугольники
         _world.QueryInto<ItemOnGround, Position>(_itemBuffer);
@@ -42,14 +46,14 @@ public class ItemRenderSystem : IRenderTickable
 
             ref var stack = ref _world.Get<ItemStack>(id);
             Color color = GetRarityColor(stack.Rarity);
-            int half = _ctx.Config.GroundItemDrawHalfSize;
-            int size = _ctx.Config.GroundItemDrawSize;
+            int half = _config.GroundItemDrawHalfSize;
+            int size = _config.GroundItemDrawSize;
             Raylib.DrawRectangle((int)pos.X - half, (int)pos.Y - half, size, size, color);
         }
 
         // Сундуки — спрайтовые с анимацией открытия
-        var chestTex = _ctx.Textures.Get("doors_chest");
-        float scale = _ctx.Config.RenderScale;
+        var chestTex = _assets.GetTexture("doors_chest");
+        float scale = _config.RenderScale;
 
         _world.QueryInto<Chest, Position>(_chestBuffer);
         for (int i = 0; i < _chestBuffer.Count; i++)
@@ -68,21 +72,21 @@ public class ItemRenderSystem : IRenderTickable
             if (chest.Opened && !chest.AnimDone)
             {
                 chest.AnimTimer += dt;
-                if (chest.AnimTimer >= _ctx.Config.ChestOpenFrameDuration)
+                if (chest.AnimTimer >= _config.ChestOpenFrameDuration)
                 {
-                    chest.AnimTimer -= _ctx.Config.ChestOpenFrameDuration;
+                    chest.AnimTimer -= _config.ChestOpenFrameDuration;
                     chest.AnimFrame++;
-                    if (chest.AnimFrame >= _ctx.Config.ChestOpenFrameCount)
+                    if (chest.AnimFrame >= _config.ChestOpenFrameCount)
                     {
-                        chest.AnimFrame = (byte)(_ctx.Config.ChestOpenFrameCount - 1);
+                        chest.AnimFrame = (byte)(_config.ChestOpenFrameCount - 1);
                         chest.AnimDone = true;
                     }
                 }
             }
 
             var src = TileAtlas.GetChestSource(chest.AnimFrame, chest.Opened);
-            float destW = _ctx.Config.ChestSpriteSize * scale;
-            float destH = _ctx.Config.ChestSpriteSize * scale;
+            float destW = _config.ChestSpriteSize * scale;
+            float destH = _config.ChestSpriteSize * scale;
             float destX = pos.X + ts / 2f - destW / 2f;
             float destY = pos.Y + ts - destH;
             var dest = new Rectangle(destX, destY, destW, destH);

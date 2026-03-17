@@ -9,15 +9,19 @@ namespace DungeonOfShadows.ECS.Combat.Systems;
 public class MeleeAttackSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly CameraSystem _cameraSystem;
     private readonly List<int> _attackBuffer = new();
     private readonly List<int> _enemyBuffer = new();
     private readonly List<int> _cooldownBuffer = new();
     private readonly Random _rng = new();
 
-    public MeleeAttackSystem(GameContext ctx, CameraSystem cameraSystem)
+    public MeleeAttackSystem(GameContext ctx, World world, GameConfig config, CameraSystem cameraSystem)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
         _cameraSystem = cameraSystem;
     }
 
@@ -25,8 +29,8 @@ public class MeleeAttackSystem : ITickable
     {
         if (_ctx.State != GameState.Playing) return;
 
-        var world = _ctx.World;
-        int ts = _ctx.Config.ScaledTileSize;
+        var world = _world;
+        int ts = _config.ScaledTileSize;
 
         // Тикаем кулдаун melee
         world.QueryInto<MeleeCooldown>(_cooldownBuffer);
@@ -82,7 +86,7 @@ public class MeleeAttackSystem : ITickable
                             continue;
                         ref var targetStats = ref world.Get<Stats>(targetId);
                         var (damage, isCrit) = DamageCalculator.Compute(
-                            ref attackerStats, ref targetStats, _ctx.Config, _rng);
+                            ref attackerStats, ref targetStats, _config, _rng);
 
                         _ctx.DamageEvents.Add(new DamageEvent(
                             attackerId, targetId, damage, isCrit, targetCX, targetCY));

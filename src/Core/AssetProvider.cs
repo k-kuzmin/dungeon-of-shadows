@@ -1,15 +1,18 @@
 using Raylib_cs;
+using DungeonOfShadows.ECS;
 
-namespace DungeonOfShadows.ECS.Rendering;
+namespace DungeonOfShadows.Core;
 
 /// <summary>
-/// Загрузка и хранение текстур. Вызывать LoadAll() после InitWindow(), UnloadAll() перед CloseWindow().
+/// Реализация IAssetProvider. Загружает все ассеты при Start(),
+/// предоставляет доступ по строковому ключу, освобождает при Dispose().
 /// </summary>
-public class TextureManager
+public sealed class AssetProvider : IAssetProvider, IStartable
 {
     private readonly Dictionary<string, Texture2D> _textures = new(16);
+    private bool _disposed;
 
-    private static readonly (string Key, string Path)[] _manifest =
+    private static readonly (string Key, string Path)[] TextureManifest =
     {
         ("walls_floor",  "assets/sprites/environment/walls_floor.png"),
         ("objects",      "assets/sprites/environment/Objects.png"),
@@ -20,9 +23,9 @@ public class TextureManager
         ("cracks_walls", "assets/sprites/environment/decorative_cracks_walls.png"),
     };
 
-    public void LoadAll()
+    public void Start()
     {
-        foreach (var (key, path) in _manifest)
+        foreach (var (key, path) in TextureManifest)
         {
             var tex = Raylib.LoadTexture(path);
             if (tex.Id == 0)
@@ -31,10 +34,13 @@ public class TextureManager
         }
     }
 
-    public Texture2D Get(string key) => _textures[key];
+    public Texture2D GetTexture(string key) => _textures[key];
 
-    public void UnloadAll()
+    public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         foreach (var tex in _textures.Values)
             Raylib.UnloadTexture(tex);
         _textures.Clear();

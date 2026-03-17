@@ -10,23 +10,27 @@ namespace DungeonOfShadows.ECS.Rendering.Systems;
 public class DecorationObjectRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
+    private readonly IAssetProvider _assets;
     private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _buffer = new();
 
     public RenderPhase Phase => RenderPhase.World;
 
-    public DecorationObjectRenderSystem(GameContext ctx)
+    public DecorationObjectRenderSystem(GameContext ctx, IAssetProvider assets, World world, GameConfig config)
     {
         _ctx = ctx;
-        _world = ctx.World;
+        _assets = assets;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
         var map = _ctx.Map;
-        int ts = _ctx.Config.ScaledTileSize;
-        float scale = _ctx.Config.RenderScale;
-        var tex = _ctx.Textures.Get("objects");
+        int ts = _config.ScaledTileSize;
+        float scale = _config.RenderScale;
+        var tex = _assets.GetTexture("objects");
 
         _world.QueryInto<DecorationObject, Position>(_buffer);
         for (int i = 0; i < _buffer.Count; i++)

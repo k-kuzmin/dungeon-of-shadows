@@ -11,14 +11,18 @@ namespace DungeonOfShadows.ECS.Combat.Systems;
 public class HealthSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly CameraSystem _cameraSystem;
     private readonly List<int> _healthBuffer = new();
     private readonly List<int> _flashBuffer = new();
     private readonly List<int> _deathBuffer = new();
 
-    public HealthSystem(GameContext ctx, CameraSystem cameraSystem)
+    public HealthSystem(GameContext ctx, World world, GameConfig config, CameraSystem cameraSystem)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
         _cameraSystem = cameraSystem;
     }
 
@@ -26,8 +30,8 @@ public class HealthSystem : ITickable
     {
         if (_ctx.State != GameState.Playing) return;
 
-        var world = _ctx.World;
-        var config = _ctx.Config;
+        var world = _world;
+        var config = _config;
 
         // Обрабатываем очередь урона
         foreach (var evt in _ctx.DamageEvents)

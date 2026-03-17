@@ -7,13 +7,17 @@ namespace DungeonOfShadows.ECS.Items.Systems;
 public class ItemUseSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly ItemDatabase _db;
     private readonly List<int> _playerBuffer = new();
     private readonly List<int> _enemyBuffer = new();
 
-    public ItemUseSystem(GameContext ctx, ItemDatabase db)
+    public ItemUseSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
         _db = db;
     }
 
@@ -21,7 +25,7 @@ public class ItemUseSystem : ITickable
     {
         if (_ctx.State != GameState.Playing) return;
 
-        var world = _ctx.World;
+        var world = _world;
         world.QueryInto<PlayerTag, Inventory>(_playerBuffer);
         if (_playerBuffer.Count == 0) return;
 
@@ -73,9 +77,9 @@ public class ItemUseSystem : ITickable
         ApplyEffect(playerId, def);
 
         if (def.Type == ItemType.Potion)
-            quick.PotionCooldown = _ctx.Config.PotionCooldownSeconds;
+            quick.PotionCooldown = _config.PotionCooldownSeconds;
         if (def.Type == ItemType.Scroll)
-            quick.ScrollCooldown = _ctx.Config.ScrollCooldownSeconds;
+            quick.ScrollCooldown = _config.ScrollCooldownSeconds;
     }
 
     private bool TryConsume(ref Inventory inv, int definitionId)
@@ -98,7 +102,7 @@ public class ItemUseSystem : ITickable
 
     private void ApplyEffect(int playerId, ItemDefinition def)
     {
-        var world = _ctx.World;
+        var world = _world;
 
         if (def.EffectType == ItemEffectType.HealHp)
         {
@@ -110,15 +114,15 @@ public class ItemUseSystem : ITickable
 
         if (def.EffectType == ItemEffectType.NovaDamage)
         {
-            int ts = _ctx.Config.ScaledTileSize;
-            float radius = _ctx.Config.ScrollNovaRadiusTiles * ts;
+            int ts = _config.ScaledTileSize;
+            float radius = _config.ScrollNovaRadiusTiles * ts;
             float radiusSq = radius * radius;
 
             ref var playerPos = ref world.Get<Position>(playerId);
             ref var playerStats = ref world.Get<Stats>(playerId);
 
             world.QueryInto<EnemyTag, Position>(_enemyBuffer);
-            uint state = (uint)(_ctx.DungeonSeed ^ (_ctx.CurrentFloor * _ctx.Config.FloorRngMixMultiplier) ^ playerId ^ def.Id);
+            uint state = (uint)(_ctx.DungeonSeed ^ (_ctx.CurrentFloor * _config.FloorRngMixMultiplier) ^ playerId ^ def.Id);
             for (int i = 0; i < _enemyBuffer.Count; i++)
             {
                 int enemyId = _enemyBuffer[i];
@@ -134,7 +138,7 @@ public class ItemUseSystem : ITickable
 
                 ref var enemyStats = ref world.Get<Stats>(enemyId);
                 state ^= (uint)enemyId;
-                var (damage, isCrit) = DamageCalculator.ComputeDeterministic(ref playerStats, ref enemyStats, _ctx.Config, ref state);
+                var (damage, isCrit) = DamageCalculator.ComputeDeterministic(ref playerStats, ref enemyStats, _config, ref state);
 
                 damage += def.EffectPower;
                 _ctx.DamageEvents.Add(new DamageEvent(playerId, enemyId, damage, isCrit, enemyPos.X, enemyPos.Y));
@@ -147,6 +151,6 @@ public class ItemUseSystem : ITickable
     private void ShowMessage(string text)
     {
         _ctx.UiMessage = text;
-        _ctx.UiMessageTimer = _ctx.Config.UiMessageSeconds;
+        _ctx.UiMessageTimer = _config.UiMessageSeconds;
     }
 }

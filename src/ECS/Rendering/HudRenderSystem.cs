@@ -10,6 +10,8 @@ namespace DungeonOfShadows.ECS.Rendering.Systems;
 public class HudRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _queryBuffer = new();
     private int _cachedFloor = -1;
     private string _cachedFloorText = "";
@@ -34,15 +36,15 @@ public class HudRenderSystem : IRenderTickable
     private static readonly Color HpBarFull = new(50, 200, 60, 255);
     private static readonly Color HpBarLow = new(200, 50, 50, 255);
 
-    public HudRenderSystem(GameContext ctx)
+    public HudRenderSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
-        var config = _ctx.Config;
-
         // FPS
         Raylib.DrawFPS(10, 10);
 
@@ -59,7 +61,7 @@ public class HudRenderSystem : IRenderTickable
             _cachedFloorText = "Floor " + _cachedFloor;
             _cachedFullscreenTitle = "Floor " + _cachedFloor + "  [Tab to close]";
         }
-        Raylib.DrawText(_cachedFloorText, 10, config.ScreenHeight - 30, 20, Color.White);
+        Raylib.DrawText(_cachedFloorText, 10, _config.ScreenHeight - 30, 20, Color.White);
 
         // Полноэкранная карта (при паузе) или мини-карта
         if (_ctx.ShowFullMap)
@@ -70,11 +72,10 @@ public class HudRenderSystem : IRenderTickable
 
     private void DrawPlayerHpBar()
     {
-        var world = _ctx.World;
-        world.QueryInto<PlayerTag, Combat.Health>(_queryBuffer);
+        _world.QueryInto<PlayerTag, Combat.Health>(_queryBuffer);
         if (_queryBuffer.Count == 0) return;
 
-        ref var health = ref world.Get<Combat.Health>(_queryBuffer[0]);
+        ref var health = ref _world.Get<Combat.Health>(_queryBuffer[0]);
 
         int barX = 10;
         int barY = _ctx.DebugMode ? 50 : 30;
@@ -109,13 +110,11 @@ public class HudRenderSystem : IRenderTickable
     private void DrawMinimap()
     {
         var map = _ctx.Map;
-        var config = _ctx.Config;
-
-        int minimapW = config.MinimapWidth;
+        int minimapW = _config.MinimapWidth;
         int minimapH = (int)(minimapW * ((float)map.Height / map.Width));
 
-        int screenX = config.ScreenWidth - minimapW - config.MinimapMargin;
-        int screenY = config.MinimapMargin;
+        int screenX = _config.ScreenWidth - minimapW - _config.MinimapMargin;
+        int screenY = _config.MinimapMargin;
 
         Raylib.DrawRectangle(screenX - 2, screenY - 2, minimapW + 4, minimapH + 4, MinimapBorder);
         Raylib.DrawRectangle(screenX, screenY, minimapW, minimapH, MinimapBg);
@@ -130,13 +129,11 @@ public class HudRenderSystem : IRenderTickable
     private void DrawFullscreenMap()
     {
         var map = _ctx.Map;
-        var config = _ctx.Config;
-
-        Raylib.DrawRectangle(0, 0, config.ScreenWidth, config.ScreenHeight, new Color(0, 0, 0, 180));
+        Raylib.DrawRectangle(0, 0, _config.ScreenWidth, _config.ScreenHeight, new Color(0, 0, 0, 180));
 
         int margin = 40;
-        int availW = config.ScreenWidth - margin * 2;
-        int availH = config.ScreenHeight - margin * 2 - 40;
+        int availW = _config.ScreenWidth - margin * 2;
+        int availH = _config.ScreenHeight - margin * 2 - 40;
 
         float scaleX = (float)availW / map.Width;
         float scaleY = (float)availH / map.Height;
@@ -145,7 +142,7 @@ public class HudRenderSystem : IRenderTickable
         int mapPixelW = (int)(map.Width * scale);
         int mapPixelH = (int)(map.Height * scale);
 
-        int screenX = (config.ScreenWidth - mapPixelW) / 2;
+        int screenX = (_config.ScreenWidth - mapPixelW) / 2;
         int screenY = margin + 30;
 
         Raylib.DrawRectangle(screenX - 2, screenY - 2, mapPixelW + 4, mapPixelH + 4, MinimapBorder);
@@ -155,7 +152,7 @@ public class HudRenderSystem : IRenderTickable
         DrawPlayerMarker(screenX, screenY, scale, scale);
 
         int titleW = Raylib.MeasureText(_cachedFullscreenTitle, 20);
-        Raylib.DrawText(_cachedFullscreenTitle, config.ScreenWidth / 2 - titleW / 2, margin, 20, Color.White);
+        Raylib.DrawText(_cachedFullscreenTitle, _config.ScreenWidth / 2 - titleW / 2, margin, 20, Color.White);
     }
 
     private void DrawMapTiles(TileMap map, int offsetX, int offsetY, float scaleX, float scaleY)
@@ -188,13 +185,12 @@ public class HudRenderSystem : IRenderTickable
 
     private void DrawPlayerMarker(int offsetX, int offsetY, float scaleX, float scaleY)
     {
-        var world = _ctx.World;
-        int ts = _ctx.Config.ScaledTileSize;
+        int ts = _config.ScaledTileSize;
 
-        world.QueryInto<PlayerTag, Position>(_queryBuffer);
+        _world.QueryInto<PlayerTag, Position>(_queryBuffer);
         if (_queryBuffer.Count == 0) return;
 
-        ref var pos = ref world.Get<Position>(_queryBuffer[0]);
+        ref var pos = ref _world.Get<Position>(_queryBuffer[0]);
         float playerTX = (pos.X + ts / 2f) / ts;
         float playerTY = (pos.Y + ts / 2f) / ts;
 

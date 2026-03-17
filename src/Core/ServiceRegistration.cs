@@ -20,41 +20,45 @@ public static class ServiceRegistration
 
         // Core
         services.AddSingleton(config);
+        services.AddSingleton<World>();
         services.AddSingleton<GameContext>();
-        services.AddSingleton<World>(sp => sp.GetRequiredService<GameContext>().World);
 
-        // Combat services
+        // Assets
+        services.AddInterfaces<AssetProvider>();
+
+        // Services
         services.AddSingleton<AStarPathfinder>();
-        services.AddSingleton<ItemDatabase>();
+        services.AddInterfaces<ItemDatabase>();
 
-        // Logic systems — registration order = tick order
-        services.AddTickable<InputSystem>();
-        services.AddTickable<InventoryInputSystem>();
-        services.AddTickable<CombatInputSystem>();
-        services.AddTickable<DashSystem>();
-        services.AddTickable<PhysicsSystem>();
-        services.AddTickable<MeleeAttackSystem>();
-        services.AddTickable<AISystem>();
-        services.AddTickable<HealthSystem>();
-        services.AddTickable<ItemDropSystem>();
-        services.AddTickable<ItemPickupSystem>();
-        services.AddTickable<ChestSystem>();
-        services.AddTickable<ItemUseSystem>();
-        services.AddTickable<DamageNumberSystem>();
-        services.AddTickable<FloorTransitionSystem>();
-        services.AddTickable<FovSystem>();
-        services.AddTickable<CameraSystem>();
-        services.AddTickable<RenderSystem>();
+        // Systems — registration order = tick/start/draw order
+        services.AddInterfaces<FloorLifecycleSystem>();
+        services.AddInterfaces<InputSystem>();
+        services.AddInterfaces<InventoryInputSystem>();
+        services.AddInterfaces<CombatInputSystem>();
+        services.AddInterfaces<DashSystem>();
+        services.AddInterfaces<PhysicsSystem>();
+        services.AddInterfaces<MeleeAttackSystem>();
+        services.AddInterfaces<AISystem>();
+        services.AddInterfaces<HealthSystem>();
+        services.AddInterfaces<ItemDropSystem>();
+        services.AddInterfaces<ItemPickupSystem>();
+        services.AddInterfaces<ChestSystem>();
+        services.AddInterfaces<ItemUseSystem>();
+        services.AddInterfaces<DamageNumberSystem>();
+        services.AddInterfaces<FloorTransitionSystem>();
+        services.AddInterfaces<FovSystem>();
+        services.AddInterfaces<CameraSystem>();
+        services.AddInterfaces<RenderSystem>();
 
         // Render sub-systems — registration order = draw order
-        services.AddRenderTickable<TileRenderSystem>();
-        services.AddRenderTickable<EntityRenderSystem>();
-        services.AddRenderTickable<CombatRenderSystem>();
-        services.AddRenderTickable<ItemRenderSystem>();
-        services.AddRenderTickable<DecorationObjectRenderSystem>();
-        services.AddRenderTickable<DebugRenderSystem>();
-        services.AddRenderTickable<HudRenderSystem>();
-        services.AddRenderTickable<InventoryRenderSystem>();
+        services.AddInterfaces<TileRenderSystem>();
+        services.AddInterfaces<EntityRenderSystem>();
+        services.AddInterfaces<CombatRenderSystem>();
+        services.AddInterfaces<ItemRenderSystem>();
+        services.AddInterfaces<DecorationObjectRenderSystem>();
+        services.AddInterfaces<DebugRenderSystem>();
+        services.AddInterfaces<HudRenderSystem>();
+        services.AddInterfaces<InventoryRenderSystem>();
 
         // Game
         services.AddSingleton<Game>();
@@ -62,15 +66,15 @@ public static class ServiceRegistration
         return services.BuildServiceProvider();
     }
 
-    private static void AddTickable<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services) where T : class, ITickable
+    private static void AddInterfaces<[DynamicallyAccessedMembers(
+        DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.Interfaces)] T>(
+        this IServiceCollection services) where T : class
     {
         services.AddSingleton<T>();
-        services.AddSingleton<ITickable>(sp => sp.GetRequiredService<T>());
-    }
 
-    private static void AddRenderTickable<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services) where T : class, IRenderTickable
-    {
-        services.AddSingleton<T>();
-        services.AddSingleton<IRenderTickable>(sp => sp.GetRequiredService<T>());
+        foreach (var iface in typeof(T).GetInterfaces())
+        {
+            services.AddSingleton(iface, sp => sp.GetRequiredService<T>());
+        }
     }
 }

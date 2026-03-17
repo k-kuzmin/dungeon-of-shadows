@@ -6,13 +6,17 @@ namespace DungeonOfShadows.ECS.Items.Systems;
 public class ChestSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly ItemDatabase _db;
     private readonly List<int> _playerBuffer = new();
     private readonly List<int> _chestBuffer = new();
 
-    public ChestSystem(GameContext ctx, ItemDatabase db)
+    public ChestSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
         _db = db;
     }
 
@@ -21,9 +25,9 @@ public class ChestSystem : ITickable
         if (_ctx.State != GameState.Playing) return;
         if (!Raylib.IsKeyPressed(KeyboardKey.E)) return;
 
-        var world = _ctx.World;
-        int ts = _ctx.Config.ScaledTileSize;
-        float maxDist = _ctx.Config.ChestInteractRadiusTiles * ts;
+        var world = _world;
+        int ts = _config.ScaledTileSize;
+        float maxDist = _config.ChestInteractRadiusTiles * ts;
         float maxDistSq = maxDist * maxDist;
 
         world.QueryInto<PlayerTag, Position>(_playerBuffer);
@@ -63,8 +67,8 @@ public class ChestSystem : ITickable
 
         if (_db.TryGetDefinition(targetChest.GuaranteedDefinitionId, out var def))
         {
-            var rng = new Random(_ctx.DungeonSeed ^ (_ctx.CurrentFloor * _ctx.Config.FloorRngMixMultiplier) ^ nearestId);
-            var stack = _db.CreateInstance(def, ItemRarity.Uncommon, rng, _ctx.Config.ItemMaxStackSize);
+            var rng = new Random(_ctx.DungeonSeed ^ (_ctx.CurrentFloor * _config.FloorRngMixMultiplier) ^ nearestId);
+            var stack = _db.CreateInstance(def, ItemRarity.Uncommon, rng, _config.ItemMaxStackSize);
 
             int itemId = world.CreateEntity();
             world.Add(itemId, new Position(playerPos.X + ts * 0.35f, playerPos.Y + ts * 0.35f));
@@ -73,6 +77,6 @@ public class ChestSystem : ITickable
         }
 
         _ctx.UiMessage = "Chest opened";
-        _ctx.UiMessageTimer = _ctx.Config.UiMessageSeconds;
+        _ctx.UiMessageTimer = _config.UiMessageSeconds;
     }
 }

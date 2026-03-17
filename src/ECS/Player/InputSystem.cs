@@ -6,19 +6,23 @@ namespace DungeonOfShadows.ECS.Player.Systems;
 public class InputSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _queryBuffer = new();
 
-    public InputSystem(GameContext ctx)
+    public InputSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
         if (_ctx.State != GameState.Playing) return;
 
-        var world = _ctx.World;
-        int scaledTile = _ctx.Config.ScaledTileSize;
+        var world = _world;
+        int scaledTile = _config.ScaledTileSize;
 
         world.QueryInto<PlayerTag, Velocity>(_queryBuffer);
         foreach (int id in _queryBuffer)

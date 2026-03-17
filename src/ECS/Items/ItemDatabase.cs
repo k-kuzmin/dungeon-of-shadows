@@ -4,7 +4,7 @@ using DungeonOfShadows.ECS.Combat;
 
 namespace DungeonOfShadows.ECS.Items;
 
-public sealed class ItemDatabase
+public sealed class ItemDatabase : IStartable
 {
     private readonly GameConfig _config;
     private readonly Dictionary<int, ItemDefinition> _defs = new();
@@ -13,6 +13,10 @@ public sealed class ItemDatabase
     public ItemDatabase(GameConfig config)
     {
         _config = config;
+    }
+
+    public void Start()
+    {
         Load();
         if (_all.Count == 0)
             LoadFallback();

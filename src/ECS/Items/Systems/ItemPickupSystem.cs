@@ -7,13 +7,17 @@ namespace DungeonOfShadows.ECS.Items.Systems;
 public class ItemPickupSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly ItemDatabase _db;
     private readonly List<int> _playerBuffer = new();
     private readonly List<int> _itemBuffer = new();
 
-    public ItemPickupSystem(GameContext ctx, ItemDatabase db)
+    public ItemPickupSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
         _db = db;
     }
 
@@ -22,9 +26,9 @@ public class ItemPickupSystem : ITickable
         if (_ctx.State != GameState.Playing) return;
         if (!Raylib.IsKeyPressed(KeyboardKey.E)) return;
 
-        var world = _ctx.World;
-        int ts = _ctx.Config.ScaledTileSize;
-        float maxDist = _ctx.Config.ItemPickupRadiusTiles * ts;
+        var world = _world;
+        int ts = _config.ScaledTileSize;
+        float maxDist = _config.ItemPickupRadiusTiles * ts;
         float maxDistSq = maxDist * maxDist;
 
         world.QueryInto<PlayerTag, Position>(_playerBuffer);
@@ -158,7 +162,7 @@ public class ItemPickupSystem : ITickable
 
     private bool TryAddToInventory(ref Inventory inventory, ItemStack incoming)
     {
-        int maxStack = _ctx.Config.ItemMaxStackSize;
+        int maxStack = _config.ItemMaxStackSize;
 
         if (incoming.Type is ItemType.Potion or ItemType.Scroll)
         {
@@ -187,7 +191,7 @@ public class ItemPickupSystem : ITickable
 
     private void TryAutoBindQuickSlot(int playerId, int definitionId)
     {
-        var world = _ctx.World;
+        var world = _world;
         if (!world.Has<QuickSlots>(playerId)) return;
         if (!_db.TryGetDefinition(definitionId, out var def)) return;
         if (def.Type is not (ItemType.Potion or ItemType.Scroll)) return;
@@ -201,7 +205,7 @@ public class ItemPickupSystem : ITickable
 
     private void SpawnGroundItem(ItemStack stack, float x, float y)
     {
-        var world = _ctx.World;
+        var world = _world;
         int id = world.CreateEntity();
         world.Add(id, new Position(x, y));
         world.Add(id, new ItemOnGround());
@@ -211,6 +215,6 @@ public class ItemPickupSystem : ITickable
     private void ShowMessage(string text)
     {
         _ctx.UiMessage = text;
-        _ctx.UiMessageTimer = _ctx.Config.UiMessageSeconds;
+        _ctx.UiMessageTimer = _config.UiMessageSeconds;
     }
 }

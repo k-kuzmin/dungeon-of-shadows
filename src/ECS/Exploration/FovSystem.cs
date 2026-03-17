@@ -10,24 +10,28 @@ namespace DungeonOfShadows.ECS.Exploration.Systems;
 public class FovSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _queryBuffer = new();
 
     private int _lastTileX = -1;
     private int _lastTileY = -1;
     private TileMap? _lastMap;
 
-    public FovSystem(GameContext ctx)
+    public FovSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
         if (_ctx.State != GameState.Playing) return;
 
-        var world = _ctx.World;
+        var world = _world;
         var map = _ctx.Map;
-        int ts = _ctx.Config.ScaledTileSize;
+        int ts = _config.ScaledTileSize;
 
         // Детектим смену карты (переход на новый этаж)
         if (map != _lastMap)
@@ -54,8 +58,8 @@ public class FovSystem : ITickable
 
     private void RecalculateFov(TileMap map, int originX, int originY)
     {
-        int radius = _ctx.Config.FovRadius;
-        int rayCount = _ctx.Config.FovRayCount;
+        int radius = _config.FovRadius;
+        int rayCount = _config.FovRayCount;
 
         // Понижаем Visible (2) до Explored (1)
         for (int x = 0; x < map.Width; x++)

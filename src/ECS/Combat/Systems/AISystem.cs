@@ -9,6 +9,8 @@ namespace DungeonOfShadows.ECS.Combat.Systems;
 public class AISystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly AStarPathfinder _pathfinder;
     private readonly List<int> _enemyBuffer = new();
     private readonly List<int> _playerBuffer = new();
@@ -19,9 +21,11 @@ public class AISystem : ITickable
     private readonly List<(int x, int y)> _tempPath = new();
     private readonly List<int> _deadPathIds = new();
 
-    public AISystem(GameContext ctx, AStarPathfinder pathfinder)
+    public AISystem(GameContext ctx, World world, GameConfig config, AStarPathfinder pathfinder)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
         _pathfinder = pathfinder;
     }
 
@@ -29,8 +33,8 @@ public class AISystem : ITickable
     {
         if (_ctx.State != GameState.Playing) return;
 
-        var world = _ctx.World;
-        var config = _ctx.Config;
+        var world = _world;
+        var config = _config;
         var map = _ctx.Map;
         int ts = config.ScaledTileSize;
 
@@ -149,7 +153,7 @@ public class AISystem : ITickable
     private void ExecutePatrol(ref EnemyTag enemy, ref Position pos, ref Velocity vel,
         float spd, int ts, TileMap map)
     {
-        var config = _ctx.Config;
+        var config = _config;
 
         // Выбираем случайную цель для патруля
         if (enemy.PatrolTargetTX < 0)
@@ -297,14 +301,14 @@ public class AISystem : ITickable
         int playerId, ref Position playerPos, int ts, float dt)
     {
         if (enemy.AttackCooldown > 0) return;
-        if (!_ctx.World.Has<Stats>(playerId)) return;
+        if (!_world.Has<Stats>(playerId)) return;
 
         // Skeleton: тяжёлая атака с коротким windup.
         if (enemy.Type == EnemyType.Skeleton)
         {
             if (enemy.AttackWindupTimer <= 0)
             {
-                enemy.AttackWindupTimer = _ctx.Config.SkeletonHeavyWindup;
+                enemy.AttackWindupTimer = _config.SkeletonHeavyWindup;
                 return;
             }
 
@@ -318,12 +322,12 @@ public class AISystem : ITickable
         enemy.AttackCooldown = enemy.AttackCooldownMax;
         enemy.State = AiState.Chase;
 
-        ref var playerStats = ref _ctx.World.Get<Stats>(playerId);
+        ref var playerStats = ref _world.Get<Stats>(playerId);
         var (damage, isCrit) = DamageCalculator.Compute(
-            ref stats, ref playerStats, _ctx.Config, _rng);
+            ref stats, ref playerStats, _config, _rng);
 
         if (enemy.Type == EnemyType.Skeleton)
-            damage = Math.Max(1, (int)(damage * _ctx.Config.SkeletonHeavyDamageMultiplier));
+            damage = Math.Max(1, (int)(damage * _config.SkeletonHeavyDamageMultiplier));
 
         float px = playerPos.X + ts / 2f;
         float py = playerPos.Y + ts / 2f;

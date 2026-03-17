@@ -25,33 +25,46 @@ dotnet publish -c Release -r osx-arm64 -p:PublishAot=true
 
 ## Архитектура
 
+### Жизненный цикл систем
+
+```
+IStartable.Start()  →  ITickable.Tick(dt)  →  IDisposable.Dispose()
+     ↑                       ↑                        ↑
+  однократно            каждый кадр              при завершении
+  после InitWindow      main loop               перед CloseWindow
+```
+
+`Game.Run()` — тонкий оркестратор, вызывает lifecycle-фазы по порядку. Никакой игровой логики в Game.
+
 ### DI-контейнер
 
 Используется `Microsoft.Extensions.DependencyInjection`. Все сервисы регистрируются в `src/Core/ServiceRegistration.cs`.
 
-**Добавление новой логической системы:**
+**Добавление любой системы:**
 ```csharp
-// В ServiceRegistration.Build():
-services.AddTickable<MyNewSystem>();
+services.AddSystem<MyNewSystem>();
 ```
-Одна строка — система автоматически попадает в game loop. Порядок регистрации = порядок тика.
+Одна строка — `AddSystem<T>()` автоматически детектит реализованные интерфейсы (`IStartable`, `ITickable`, `IRenderTickable`, `IDisposable`) и регистрирует всё нужное. Добавление `IDisposable` к системе **не требует** правки `ServiceRegistration`.
 
-**Добавление новой рендер-подсистемы:**
+Порядок вызовов `AddSystem` = порядок Start/Tick/Draw/Dispose.
+
+### IStartable
+
+Однократная инициализация после сборки DI-контейнера:
 ```csharp
-services.AddRenderTickable<MyRenderSystem>();
+public interface IStartable { void Start(); }
 ```
-Рендер-подсистемы вызываются из `RenderSystem` в нужном контексте (World-space или Screen-space).
 
 ### ITickable
 
-Единый интерфейс для всех систем, участвующих в game loop:
+Покадровое обновление в game loop:
 ```csharp
 public interface ITickable { void Tick(float dt); }
 ```
 
 ### IRenderTickable
 
-Интерфейс для рендер-подсистем, вызываемых из `RenderSystem`:
+Рендер-подсистемы, вызываемые из `RenderSystem`:
 ```csharp
 public interface IRenderTickable
 {
@@ -59,14 +72,33 @@ public interface IRenderTickable
     void Tick(float dt);
 }
 ```
-`RenderSystem` — обёртка, управляет `BeginDrawing/EndDrawing` и `BeginMode2D/EndMode2D`. Внутри вызывает `IRenderTickable` подсистемы по фазам. World-space рисование — внутри `BeginMode2D/EndMode2D`; экранные элементы — в `RenderPhase.Screen`.
+`RenderSystem` — обёртка, управляет `BeginDrawing/EndDrawing` и `BeginMode2D/EndMode2D`. World-space рисование — внутри `BeginMode2D/EndMode2D`; экранные элементы — в `RenderPhase.Screen`.
+
+### IAssetProvider
+
+Централизованная загрузка и доступ к ассетам по ключу:
+```csharp
+public interface IAssetProvider : IDisposable
+{
+    Texture2D GetTexture(string key);
+}
+```
+`AssetProvider` реализует `IAssetProvider` + `IStartable`. Загружает текстуры при `Start()`, освобождает при `Dispose()`. Рендер-системы инжектят `IAssetProvider` напрямую через конструктор.
+
+### FloorLifecycleSystem
+
+Единственное место генерации уровня и спавна сущностей. Реализует `IStartable` (первый этаж) + `ITickable` (обработка переходов).
+
+Поток данных:
+- `FloorTransitionSystem` детектит E/Space на лестнице → ставит `_ctx.FloorTransitionRequested = true`
+- `FloorLifecycleSystem.Tick()` обрабатывает флаг → очищает мир → генерирует этаж → спавнит сущности
 
 ### Принципы систем
 
 - **Системы не вызывают друг друга** — общаются через данные (`GameContext`, компоненты, `DamageEvents`)
 - **Исключение**: системы могут принимать другие системы через DI для вызова конкретных API (напр. `CameraSystem.TriggerShake()`)
 - **Game.Run тикает все системы безусловно** — каждая система сама проверяет `GameState` если нужно
-- **Рендер-подсистемы** регистрируются отдельно через `AddRenderTickable`, не через `AddTickable`
+- **Рендер-подсистемы** регистрируются через `AddSystem` (автодетект `IRenderTickable`)
 
 ### ECS
 
@@ -79,16 +111,16 @@ public interface IRenderTickable
 
 ### GameContext
 
-Центральный контейнер зависимостей, передаётся всем системам через конструктор:
-- `World` — ECS мир
-- `Map` — текущая тайловая карта
-- `Config` — все настраиваемые параметры
+Разделяемое мутабельное состояние игры. **Не содержит** `World` и `GameConfig` — они инжектятся напрямую через DI:
 - `State` — текущее состояние игры (Playing, Paused, Menu, Dead)
-- `CurrentFloor` — номер этажа
-- `DungeonSeed` — сид генерации
-- `DebugMode` — режим отладки
-- `ShowFullMap` — полноэкранная карта
-- `DamageEvents` — очередь событий урона (заполняется MeleeAttackSystem/AISystem, дренится HealthSystem)
+- `Map` — текущая тайловая карта
+- `Camera` — Raylib-камера
+- `CurrentFloor`, `DungeonSeed` — параметры этажа
+- `DebugMode`, `ShowFullMap`, `ShowInventory` — UI-флаги
+- `FloorTransitionRequested` — флаг запроса перехода этажа
+- `DamageEvents` — очередь событий урона
+- `ItemDropRequests` — очередь запросов дропа
+- `UiMessage`, `UiMessageTimer` — временные сообщения UI
 
 ### GameConfig
 
@@ -103,6 +135,12 @@ public interface IRenderTickable
 ## Порядок тика систем
 
 ```
+--- Start phase (однократно) ---
+AssetProvider         → загрузка всех текстур
+FloorLifecycleSystem  → генерация 1-го этажа, спавн игрока и сущностей
+
+--- Tick phase (каждый кадр) ---
+FloorLifecycleSystem  → обработка перехода этажа (если FloorTransitionRequested)
 InputSystem           → движение WASD (пропускает если не Playing)
 InventoryInputSystem  → Tab инвентарь, клики по слотам, использование предметов
 CombatInputSystem     → ЛКМ атака, Shift дэш (пропускает если не Playing)
@@ -116,7 +154,7 @@ ItemPickupSystem      → подбор предметов с земли
 ChestSystem           → взаимодействие с сундуками
 ItemUseSystem         → применение предметов (зелья, свитки)
 DamageNumberSystem    → float-up чисел урона
-FloorTransitionSystem → переход между этажами
+FloorTransitionSystem → детектит лестницу + ставит FloorTransitionRequested
 FovSystem             → туман войны
 CameraSystem          → камера (тикает всегда)
 RenderSystem          → обёртка рендера (тикает всегда)
@@ -127,21 +165,25 @@ RenderSystem          → обёртка рендера (тикает всегд
   ├─ DebugRenderSystem     (World) — сетка + коллайдеры
   ├─ HudRenderSystem       (Screen) — FPS, этаж, HP игрока, мини-карта
   └─ InventoryRenderSystem (Screen) — UI инвентаря, экипировка, быстрые слоты
+
+--- Dispose phase (при выходе) ---
+AssetProvider         → выгрузка всех текстур
 ```
 
 ## Структура каталогов
 
 ```
 src/
-├── Core/              — Game, GameConfig, GameContext, GameState, ServiceRegistration
+├── Core/              — Game, GameConfig, GameContext, GameState, ServiceRegistration,
+│                        IAssetProvider, AssetProvider
 ├── ECS/
-│   ├── Core/          — World, ComponentStore, ITickable, IRenderTickable
+│   ├── Core/          — World, ComponentStore, IStartable, ITickable, IRenderTickable
 │   ├── Player/        — PlayerTag, InputSystem
 │   ├── Physics/       — Position, Velocity, Collider, PhysicsSystem
 │   ├── Rendering/     — Sprite, RenderSystem, CameraSystem,
 │   │                    TileRenderSystem, EntityRenderSystem,
 │   │                    DebugRenderSystem, HudRenderSystem
-│   ├── Exploration/   — FovSystem, FloorTransitionSystem
+│   ├── Exploration/   — FovSystem, FloorTransitionSystem, FloorLifecycleSystem
 │   ├── Combat/
 │   │   ├── Components/ — Health, Stats, EnemyTag, MeleeAttack, DashState,
 │   │   │                 DashCooldown, Invincible, DamageFlash,
@@ -175,11 +217,11 @@ docs/plans/            — планы по фазам разработки
 - **Язык кода:** C# 12, английские имена классов/методов/переменных
 - **Язык комментариев и документации:** русский
 - **Неймспейсы** соответствуют структуре папок (напр. `DungeonOfShadows.ECS.Physics.Systems` для файлов в `src/ECS/Physics/`)
-- **Логические системы** наследуют `ITickable` и получают `GameContext` через конструктор
+- **Логические системы** наследуют `ITickable`, получают `World`, `GameConfig`, `GameContext` через DI-конструктор
 - **Рендер-подсистемы** наследуют `IRenderTickable`, указывают `RenderPhase`
 - **Компоненты** — struct, без логики, каждый в отдельном файле
 - **Системы** — class, вся логика в `Tick(float dt)`
-- **Системы не зависят друг от друга** — только от `GameContext` и компонентов
+- **Системы не зависят друг от друга** — только от `World`, `GameConfig`, `GameContext` и компонентов
 - **Конфигурация** — через `GameConfig`, не через константы в классах
 - **Новые зависимости** — регистрировать в `ServiceRegistration.cs`
 - **Фиче-ориентированная структура** — компоненты и системы группируются по фичам в `src/ECS/`

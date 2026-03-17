@@ -9,24 +9,28 @@ namespace DungeonOfShadows.ECS.Rendering.Systems;
 public class DebugRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _colliderBuffer = new();
 
     public RenderPhase Phase => RenderPhase.World;
 
     private static readonly Color GridColor = new(255, 255, 255, 30);
 
-    public DebugRenderSystem(GameContext ctx)
+    public DebugRenderSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
         if (!_ctx.DebugMode) return;
 
-        var world = _ctx.World;
+        var world = _world;
         var map = _ctx.Map;
-        int ts = _ctx.Config.ScaledTileSize;
+        int ts = _config.ScaledTileSize;
 
         // Сетка
         for (int x = 0; x <= map.Width; x++)

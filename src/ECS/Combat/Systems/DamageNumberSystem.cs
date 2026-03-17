@@ -8,17 +8,21 @@ namespace DungeonOfShadows.ECS.Combat.Systems;
 public class DamageNumberSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _buffer = new();
 
-    public DamageNumberSystem(GameContext ctx)
+    public DamageNumberSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
-        var world = _ctx.World;
-        var config = _ctx.Config;
+        var world = _world;
+        var config = _config;
 
         world.QueryInto<DamageNumber>(_buffer);
         foreach (int id in _buffer)

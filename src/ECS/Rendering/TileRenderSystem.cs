@@ -10,31 +10,35 @@ namespace DungeonOfShadows.ECS.Rendering.Systems;
 public class TileRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
+    private readonly IAssetProvider _assets;
+    private readonly GameConfig _config;
 
     public RenderPhase Phase => RenderPhase.World;
 
     private static readonly Color ExploredTint = new(100, 100, 100, 255);
     private static readonly Color FullTint = Color.White;
 
-    public TileRenderSystem(GameContext ctx)
+    public TileRenderSystem(GameContext ctx, IAssetProvider assets, GameConfig config)
     {
         _ctx = ctx;
+        _assets = assets;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
         var map = _ctx.Map;
         var cam = _ctx.Camera;
-        var config = _ctx.Config;
+        var config = _config;
         int ts = config.ScaledTileSize;
         float scale = config.RenderScale;
 
         // Текстуры — кешируем в локальные переменные (zero dict lookups в цикле)
-        var wallsTex = _ctx.Textures.Get("walls_floor");
-        var crackFloorTex = _ctx.Textures.Get("cracks_floor");
-        var crackWallTex = _ctx.Textures.Get("cracks_walls");
-        var fireTex = _ctx.Textures.Get("fire_large");
-        var objectsTex = _ctx.Textures.Get("objects");
+        var wallsTex = _assets.GetTexture("walls_floor");
+        var crackFloorTex = _assets.GetTexture("cracks_floor");
+        var crackWallTex = _assets.GetTexture("cracks_walls");
+        var fireTex = _assets.GetTexture("fire_large");
+        var objectsTex = _assets.GetTexture("objects");
 
         // Frustum culling
         float left = cam.Target.X - cam.Offset.X / cam.Zoom;

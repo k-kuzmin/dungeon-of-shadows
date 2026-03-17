@@ -9,20 +9,24 @@ namespace DungeonOfShadows.ECS.Rendering.Systems;
 public class EntityRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _spriteBuffer = new();
 
     public RenderPhase Phase => RenderPhase.World;
 
-    public EntityRenderSystem(GameContext ctx)
+    public EntityRenderSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
-        var world = _ctx.World;
-        int scale = _ctx.Config.RenderScale;
-        int ts = _ctx.Config.ScaledTileSize;
+        var world = _world;
+        int scale = _config.RenderScale;
+        int ts = _config.ScaledTileSize;
         var map = _ctx.Map;
 
         world.QueryInto<Sprite, Position>(_spriteBuffer);

@@ -6,13 +6,17 @@ namespace DungeonOfShadows.ECS.Items.Systems;
 public class ItemDropSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly ItemDatabase _db;
     private Random _rng = new(0);
     private int _seed = int.MinValue;
 
-    public ItemDropSystem(GameContext ctx, ItemDatabase db)
+    public ItemDropSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
         _db = db;
     }
 
@@ -27,8 +31,8 @@ public class ItemDropSystem : ITickable
         if (_ctx.ItemDropRequests.Count == 0)
             return;
 
-        var world = _ctx.World;
-        var cfg = _ctx.Config;
+        var world = _world;
+        var cfg = _config;
 
         for (int i = 0; i < _ctx.ItemDropRequests.Count; i++)
         {

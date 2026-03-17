@@ -7,6 +7,8 @@ namespace DungeonOfShadows.ECS.Items.Systems;
 public class InventoryRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly ItemDatabase _db;
     private readonly List<int> _playerBuffer = new();
     private int _selectedInvSlot = -1;
@@ -15,9 +17,11 @@ public class InventoryRenderSystem : IRenderTickable
 
     public RenderPhase Phase => RenderPhase.Screen;
 
-    public InventoryRenderSystem(GameContext ctx, ItemDatabase db)
+    public InventoryRenderSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
         _db = db;
     }
 
@@ -28,14 +32,14 @@ public class InventoryRenderSystem : IRenderTickable
         if (_ctx.UiMessageTimer > 0 && !string.IsNullOrWhiteSpace(_ctx.UiMessage))
         {
             int textW = Raylib.MeasureText(_ctx.UiMessage, 22);
-            int x = _ctx.Config.ScreenWidth / 2 - textW / 2;
+            int x = _config.ScreenWidth / 2 - textW / 2;
             Raylib.DrawText(_ctx.UiMessage, x, 16, 22, Color.Gold);
         }
 
         if (!_ctx.ShowInventory)
             return;
 
-        var world = _ctx.World;
+        var world = _world;
         world.QueryInto<PlayerTag, Inventory>(_playerBuffer);
         if (_playerBuffer.Count == 0)
             return;
@@ -49,20 +53,20 @@ public class InventoryRenderSystem : IRenderTickable
         ref var stats = ref world.Get<Stats>(playerId);
         ref var hp = ref world.Get<Health>(playerId);
 
-        int panelX = _ctx.Config.InventoryPanelX;
-        int panelY = _ctx.Config.InventoryPanelY;
-        int panelW = _ctx.Config.ScreenWidth - 240;
-        int panelH = _ctx.Config.ScreenHeight - 180;
+        int panelX = _config.InventoryPanelX;
+        int panelY = _config.InventoryPanelY;
+        int panelW = _config.ScreenWidth - 240;
+        int panelH = _config.ScreenHeight - 180;
 
         Raylib.DrawRectangle(panelX, panelY, panelW, panelH, new Color(20, 20, 24, 235));
         Raylib.DrawRectangleLines(panelX, panelY, panelW, panelH, new Color(180, 180, 180, 255));
         Raylib.DrawText("Inventory (I to close)", panelX + 20, panelY + 14, 24, Color.White);
 
         int cols = 5;
-        int cellSize = _ctx.Config.InventoryCellSize;
-        int gap = _ctx.Config.InventoryCellGap;
-        int startX = panelX + _ctx.Config.InventoryPanelPaddingX;
-        int startY = panelY + _ctx.Config.InventoryPanelPaddingY;
+        int cellSize = _config.InventoryCellSize;
+        int gap = _config.InventoryCellGap;
+        int startX = panelX + _config.InventoryPanelPaddingX;
+        int startY = panelY + _config.InventoryPanelPaddingY;
 
         string tooltip = string.Empty;
         string compare = string.Empty;
@@ -112,7 +116,7 @@ public class InventoryRenderSystem : IRenderTickable
 
     private void DrawQuickSlots()
     {
-        var world = _ctx.World;
+        var world = _world;
         world.QueryInto<PlayerTag, QuickSlots>(_playerBuffer);
         if (_playerBuffer.Count == 0)
             return;
@@ -120,8 +124,8 @@ public class InventoryRenderSystem : IRenderTickable
         int playerId = _playerBuffer[0];
         ref var quick = ref world.Get<QuickSlots>(playerId);
 
-        int baseY = _ctx.Config.ScreenHeight - 52;
-        int baseX = _ctx.Config.ScreenWidth / 2 - 120;
+        int baseY = _config.ScreenHeight - 52;
+        int baseX = _config.ScreenWidth / 2 - 120;
 
         DrawQuickSlot(1, quick.Slot1DefinitionId, baseX + 0, baseY);
         DrawQuickSlot(2, quick.Slot2DefinitionId, baseX + 60, baseY);
@@ -192,8 +196,8 @@ public class InventoryRenderSystem : IRenderTickable
         }
 
         // Equipment click area
-        int ex = _ctx.Config.InventoryPanelX + (_ctx.Config.ScreenWidth - 240) - 270;
-        int ey = _ctx.Config.InventoryPanelY + _ctx.Config.InventoryPanelPaddingY;
+        int ex = _config.InventoryPanelX + (_config.ScreenWidth - 240) - 270;
+        int ey = _config.InventoryPanelY + _config.InventoryPanelPaddingY;
         for (int i = 0; i < 5; i++)
         {
             int rowY = ey + i * 40;
@@ -303,7 +307,7 @@ public class InventoryRenderSystem : IRenderTickable
 
     private bool TryAddToInventory(ref Inventory inv, ItemStack stack)
     {
-        int maxStack = _ctx.Config.ItemMaxStackSize;
+        int maxStack = _config.ItemMaxStackSize;
         if (stack.Type is ItemType.Potion or ItemType.Scroll)
         {
             for (int i = 0; i < inv.Capacity; i++)
@@ -329,13 +333,13 @@ public class InventoryRenderSystem : IRenderTickable
 
     private void DropToGroundNearPlayer(int playerId, ItemStack stack)
     {
-        var world = _ctx.World;
+        var world = _world;
         if (!world.Has<Position>(playerId))
             return;
 
         ref var playerPos = ref world.Get<Position>(playerId);
         int id = world.CreateEntity();
-        float offset = _ctx.Config.ItemDropOffsetPixels;
+        float offset = _config.ItemDropOffsetPixels;
         world.Add(id, new Position(playerPos.X + offset, playerPos.Y + offset));
         world.Add(id, new ItemOnGround());
         world.Add(id, stack);
@@ -423,7 +427,7 @@ public class InventoryRenderSystem : IRenderTickable
     private void ShowMessage(string text)
     {
         _ctx.UiMessage = text;
-        _ctx.UiMessageTimer = _ctx.Config.UiMessageSeconds;
+        _ctx.UiMessageTimer = _config.UiMessageSeconds;
     }
 
     private static string FormatDelta(int value)

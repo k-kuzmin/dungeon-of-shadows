@@ -8,22 +8,26 @@ namespace DungeonOfShadows.ECS.Combat.Systems;
 public class DashSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _dashBuffer = new();
     private readonly List<int> _cooldownBuffer = new();
     private readonly List<int> _invBuffer = new();
     private readonly List<int> _afterBuffer = new();
 
-    public DashSystem(GameContext ctx)
+    public DashSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
         if (_ctx.State != GameState.Playing) return;
 
-        var world = _ctx.World;
-        var config = _ctx.Config;
+        var world = _world;
+        var config = _config;
 
         // Активные дэши
         world.QueryInto<DashState, Velocity>(_dashBuffer);

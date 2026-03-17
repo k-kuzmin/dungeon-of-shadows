@@ -6,20 +6,24 @@ namespace DungeonOfShadows.ECS.Physics.Systems;
 public class PhysicsSystem : ITickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _queryBuffer = new();
 
-    public PhysicsSystem(GameContext ctx)
+    public PhysicsSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
     {
         if (_ctx.State != GameState.Playing) return;
 
-        var world = _ctx.World;
+        var world = _world;
         var map = _ctx.Map;
-        int tileSize = _ctx.Config.ScaledTileSize;
+        int tileSize = _config.ScaledTileSize;
 
         world.QueryInto<Position, Velocity>(_queryBuffer);
         foreach (int id in _queryBuffer)

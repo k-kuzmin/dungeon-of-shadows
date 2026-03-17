@@ -9,6 +9,8 @@ namespace DungeonOfShadows.ECS.Combat.Systems;
 public class CombatRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
+    private readonly World _world;
+    private readonly GameConfig _config;
     private readonly List<int> _attackBuffer = new();
     private readonly List<int> _enemyBuffer = new();
     private readonly List<int> _dmgNumBuffer = new();
@@ -21,9 +23,11 @@ public class CombatRenderSystem : IRenderTickable
     private static readonly Color DmgColorNormal = new(255, 255, 100, 255);
     private static readonly Color DmgColorCrit = new(255, 80, 40, 255);
 
-    public CombatRenderSystem(GameContext ctx)
+    public CombatRenderSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
+        _world = world;
+        _config = config;
     }
 
     public void Tick(float dt)
@@ -35,8 +39,8 @@ public class CombatRenderSystem : IRenderTickable
 
     private void DrawSlashArcs()
     {
-        var world = _ctx.World;
-        int ts = _ctx.Config.ScaledTileSize;
+        var world = _world;
+        int ts = _config.ScaledTileSize;
 
         world.QueryInto<MeleeAttack, Position>(_attackBuffer);
         foreach (int id in _attackBuffer)
@@ -91,8 +95,8 @@ public class CombatRenderSystem : IRenderTickable
 
     private void DrawEnemyHealthBars()
     {
-        var world = _ctx.World;
-        int ts = _ctx.Config.ScaledTileSize;
+        var world = _world;
+        int ts = _config.ScaledTileSize;
         var map = _ctx.Map;
 
         world.QueryInto<EnemyTag, Health>(_enemyBuffer);
@@ -122,7 +126,7 @@ public class CombatRenderSystem : IRenderTickable
 
     private void DrawDamageNumbers()
     {
-        var world = _ctx.World;
+        var world = _world;
 
         world.QueryInto<DamageNumber>(_dmgNumBuffer);
         foreach (int id in _dmgNumBuffer)
