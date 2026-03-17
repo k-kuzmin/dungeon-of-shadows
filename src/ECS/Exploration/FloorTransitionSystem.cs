@@ -2,6 +2,7 @@ using Raylib_cs;
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
 using DungeonOfShadows.ECS.Combat;
+using DungeonOfShadows.ECS.Items;
 
 namespace DungeonOfShadows.ECS.Exploration.Systems;
 
@@ -49,9 +50,13 @@ public class FloorTransitionSystem : ITickable
         var world = _ctx.World;
 
         // Уничтожаем всех не-игроков
-        var toDestroy = world.AllEntities
-            .Where(id => id != playerId && world.IsAlive(id))
-            .ToList();
+        var toDestroy = new List<int>();
+        foreach (int id in world.AllEntities)
+        {
+            if (id == playerId) continue;
+            if (!world.IsAlive(id)) continue;
+            toDestroy.Add(id);
+        }
         foreach (int id in toDestroy)
             world.DestroyEntity(id);
 
@@ -73,5 +78,6 @@ public class FloorTransitionSystem : ITickable
 
         // Спавн врагов на новом этаже
         EnemySpawner.SpawnEnemies(world, _ctx.Map, _ctx.Config, _ctx.CurrentFloor, _ctx.DungeonSeed);
+        ChestSpawner.SpawnChests(world, _ctx.Map, _ctx.Config, _ctx.CurrentFloor, _ctx.DungeonSeed);
     }
 }

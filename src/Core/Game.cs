@@ -2,6 +2,7 @@ using Raylib_cs;
 using DungeonOfShadows.Dungeon;
 using DungeonOfShadows.ECS;
 using DungeonOfShadows.ECS.Combat;
+using DungeonOfShadows.ECS.Items;
 
 namespace DungeonOfShadows.Core;
 
@@ -39,7 +40,7 @@ public class Game
             if (Raylib.IsKeyPressed(KeyboardKey.Tab))
             {
                 _ctx.ShowFullMap = !_ctx.ShowFullMap;
-                _ctx.State = _ctx.ShowFullMap ? GameState.Paused : GameState.Playing;
+                _ctx.State = (_ctx.ShowFullMap || _ctx.ShowInventory) ? GameState.Paused : GameState.Playing;
             }
 
             // Все системы тикают всегда — каждая сама решает, реагировать ли на состояние
@@ -60,6 +61,7 @@ public class Game
 
         SpawnPlayer(result.SpawnRoom);
         EnemySpawner.SpawnEnemies(_ctx.World, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
+        ChestSpawner.SpawnChests(_ctx.World, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
         SnapCameraToPlayer();
     }
 
@@ -83,6 +85,9 @@ public class Game
         world.Add(playerId, new Health(_config.PlayerBaseHP, _config.PlayerBaseHP));
         world.Add(playerId, new Stats(_config.PlayerBaseATK, _config.PlayerBaseDEF,
             _config.PlayerSpeed, _config.PlayerBaseCrit));
+        world.Add(playerId, new Inventory(_config.InventorySlots));
+        world.Add(playerId, new Equipment());
+        world.Add(playerId, new QuickSlots(init: true));
     }
 
     private void SnapCameraToPlayer()

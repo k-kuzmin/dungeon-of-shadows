@@ -11,6 +11,12 @@ public class HudRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
     private readonly List<int> _queryBuffer = new();
+    private int _cachedFloor = -1;
+    private string _cachedFloorText = "";
+    private string _cachedFullscreenTitle = "";
+    private int _cachedHp = -1;
+    private int _cachedMaxHp = -1;
+    private string _cachedHpText = "";
 
     public RenderPhase Phase => RenderPhase.Screen;
 
@@ -47,7 +53,13 @@ public class HudRenderSystem : IRenderTickable
         DrawPlayerHpBar();
 
         // Номер этажа
-        Raylib.DrawText($"Floor {_ctx.CurrentFloor}", 10, config.ScreenHeight - 30, 20, Color.White);
+        if (_cachedFloor != _ctx.CurrentFloor)
+        {
+            _cachedFloor = _ctx.CurrentFloor;
+            _cachedFloorText = "Floor " + _cachedFloor;
+            _cachedFullscreenTitle = "Floor " + _cachedFloor + "  [Tab to close]";
+        }
+        Raylib.DrawText(_cachedFloorText, 10, config.ScreenHeight - 30, 20, Color.White);
 
         // Полноэкранная карта (при паузе) или мини-карта
         if (_ctx.ShowFullMap)
@@ -83,9 +95,15 @@ public class HudRenderSystem : IRenderTickable
         Raylib.DrawRectangle(barX, barY, (int)(barW * fraction), barH, barColor);
         Raylib.DrawRectangleLines(barX, barY, barW, barH, Color.White);
 
-        string hpText = $"{health.HP}/{health.MaxHP}";
-        int textW = Raylib.MeasureText(hpText, 14);
-        Raylib.DrawText(hpText, barX + barW / 2 - textW / 2, barY + 1, 14, Color.White);
+        if (_cachedHp != health.HP || _cachedMaxHp != health.MaxHP)
+        {
+            _cachedHp = health.HP;
+            _cachedMaxHp = health.MaxHP;
+            _cachedHpText = _cachedHp + "/" + _cachedMaxHp;
+        }
+
+        int textW = Raylib.MeasureText(_cachedHpText, 14);
+        Raylib.DrawText(_cachedHpText, barX + barW / 2 - textW / 2, barY + 1, 14, Color.White);
     }
 
     private void DrawMinimap()
@@ -136,9 +154,8 @@ public class HudRenderSystem : IRenderTickable
         DrawMapTiles(map, screenX, screenY, scale, scale);
         DrawPlayerMarker(screenX, screenY, scale, scale);
 
-        string title = $"Floor {_ctx.CurrentFloor}  [Tab to close]";
-        int titleW = Raylib.MeasureText(title, 20);
-        Raylib.DrawText(title, config.ScreenWidth / 2 - titleW / 2, margin, 20, Color.White);
+        int titleW = Raylib.MeasureText(_cachedFullscreenTitle, 20);
+        Raylib.DrawText(_cachedFullscreenTitle, config.ScreenWidth / 2 - titleW / 2, margin, 20, Color.White);
     }
 
     private void DrawMapTiles(TileMap map, int offsetX, int offsetY, float scaleX, float scaleY)

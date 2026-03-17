@@ -2,6 +2,7 @@ using Raylib_cs;
 using DungeonOfShadows.Dungeon;
 using DungeonOfShadows.ECS;
 using DungeonOfShadows.ECS.Combat;
+using DungeonOfShadows.ECS.Items;
 
 namespace DungeonOfShadows.Core;
 
@@ -19,11 +20,19 @@ public class GameContext
     public int DungeonSeed { get; set; }
     public bool DebugMode { get; set; }
     public bool ShowFullMap { get; set; }
+    public bool ShowInventory { get; set; }
+    public string UiMessage { get; set; } = string.Empty;
+    public float UiMessageTimer { get; set; }
 
     /// <summary>
     /// Очередь событий урона. Заполняется MeleeAttackSystem/AISystem, дренится HealthSystem.
     /// </summary>
     public List<DamageEvent> DamageEvents { get; } = new(32);
+
+    /// <summary>
+    /// Очередь запросов на дроп предметов при смерти врагов.
+    /// </summary>
+    public List<ItemDropRequest> ItemDropRequests { get; } = new(32);
 
     public GameContext(GameConfig config)
     {

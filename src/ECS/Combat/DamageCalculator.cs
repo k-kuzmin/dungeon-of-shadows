@@ -25,6 +25,25 @@ public static class DamageCalculator
     }
 
     /// <summary>
+    /// Детерминированный расчёт урона без аллокаций Random.
+    /// </summary>
+    public static (int damage, bool isCrit) ComputeDeterministic(
+        ref Stats attacker, ref Stats defender, GameConfig config, ref uint state,
+        float weaponMult = 1f)
+    {
+        float raw = attacker.ATK * weaponMult;
+        float reduced = raw - defender.DEF * config.DefReduction;
+        int jitter = NextRange(ref state, -1, 3); // -1..2
+        int damage = Math.Max(1, (int)(reduced + jitter));
+
+        bool isCrit = NextFloat(ref state) < attacker.Crit;
+        if (isCrit)
+            damage = (int)(damage * config.CritMultiplier);
+
+        return (damage, isCrit);
+    }
+
+    /// <summary>
     /// Скейлит целочисленный стат по этажу: base * (1 + floor * scale).
     /// </summary>
     public static int ScaleStat(int baseStat, int floor, float scale) =>
@@ -35,4 +54,27 @@ public static class DamageCalculator
     /// </summary>
     public static float ScaleStat(float baseStat, int floor, float scale) =>
         baseStat * (1f + floor * scale);
+
+    private static int NextRange(ref uint state, int minInclusive, int maxExclusive)
+    {
+        uint n = NextUInt(ref state);
+        int span = maxExclusive - minInclusive;
+        return minInclusive + (int)(n % (uint)span);
+    }
+
+    private static float NextFloat(ref uint state)
+    {
+        return (NextUInt(ref state) & 0xFFFFFF) / 16777216f;
+    }
+
+    private static uint NextUInt(ref uint state)
+    {
+        if (state == 0)
+            state = 0x6E624EB7u;
+
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        return state;
+    }
 }

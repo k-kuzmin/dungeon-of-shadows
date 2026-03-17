@@ -17,6 +17,7 @@ public class AISystem : ITickable
     // Кеш путей (entity id → путь)
     private readonly Dictionary<int, List<(int x, int y)>> _paths = new();
     private readonly List<(int x, int y)> _tempPath = new();
+    private readonly List<int> _deadPathIds = new();
 
     public AISystem(GameContext ctx, AStarPathfinder pathfinder)
     {
@@ -136,8 +137,12 @@ public class AISystem : ITickable
         }
 
         // Чистим кеш путей от уже удалённых сущностей
-        var deadIds = _paths.Keys.Where(cachedId => !(world.IsAlive(cachedId))).ToList();
-        foreach (int deadId in deadIds)
+        _deadPathIds.Clear();
+        foreach (int cachedId in _paths.Keys)
+            if (!world.IsAlive(cachedId))
+                _deadPathIds.Add(cachedId);
+
+        foreach (int deadId in _deadPathIds)
             _paths.Remove(deadId);
     }
 

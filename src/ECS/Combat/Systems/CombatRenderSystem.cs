@@ -134,7 +134,7 @@ public class CombatRenderSystem : IRenderTickable
             var color = new Color(baseColor.R, baseColor.G, baseColor.B, (byte)(255 * alpha));
 
             int fontSize = num.IsCrit ? 20 : 16;
-            string text = num.Value.ToString();
+            string text = string.IsNullOrEmpty(num.CachedText) ? num.Value.ToString() : num.CachedText;
 
             Raylib.DrawText(text, (int)num.WorldX, (int)num.WorldY, fontSize, color);
         }

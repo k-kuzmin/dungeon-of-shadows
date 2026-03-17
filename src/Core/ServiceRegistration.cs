@@ -6,6 +6,8 @@ using DungeonOfShadows.ECS.Combat.Systems;
 using DungeonOfShadows.ECS.Player.Systems;
 using DungeonOfShadows.ECS.Physics.Systems;
 using DungeonOfShadows.ECS.Exploration.Systems;
+using DungeonOfShadows.ECS.Items;
+using DungeonOfShadows.ECS.Items.Systems;
 using DungeonOfShadows.ECS.Rendering.Systems;
 
 namespace DungeonOfShadows.Core;
@@ -23,15 +25,21 @@ public static class ServiceRegistration
 
         // Combat services
         services.AddSingleton<AStarPathfinder>();
+        services.AddSingleton<ItemDatabase>();
 
         // Logic systems — registration order = tick order
         services.AddTickable<InputSystem>();
+        services.AddTickable<InventoryInputSystem>();
         services.AddTickable<CombatInputSystem>();
         services.AddTickable<DashSystem>();
         services.AddTickable<PhysicsSystem>();
         services.AddTickable<MeleeAttackSystem>();
         services.AddTickable<AISystem>();
         services.AddTickable<HealthSystem>();
+        services.AddTickable<ItemDropSystem>();
+        services.AddTickable<ItemPickupSystem>();
+        services.AddTickable<ChestSystem>();
+        services.AddTickable<ItemUseSystem>();
         services.AddTickable<DamageNumberSystem>();
         services.AddTickable<FloorTransitionSystem>();
         services.AddTickable<FovSystem>();
@@ -42,8 +50,10 @@ public static class ServiceRegistration
         services.AddRenderTickable<TileRenderSystem>();
         services.AddRenderTickable<EntityRenderSystem>();
         services.AddRenderTickable<CombatRenderSystem>();
+        services.AddRenderTickable<ItemRenderSystem>();
         services.AddRenderTickable<DebugRenderSystem>();
         services.AddRenderTickable<HudRenderSystem>();
+        services.AddRenderTickable<InventoryRenderSystem>();
 
         // Game
         services.AddSingleton<Game>();

@@ -1,4 +1,5 @@
 using DungeonOfShadows.Core;
+using DungeonOfShadows.ECS.Items;
 using DungeonOfShadows.ECS.Rendering.Systems;
 
 namespace DungeonOfShadows.ECS.Combat.Systems;
@@ -50,6 +51,7 @@ public class HealthSystem : ITickable
             world.Add(numId, new DamageNumber
             {
                 Value = evt.Damage,
+                CachedText = evt.Damage.ToString(),
                 IsCrit = evt.IsCrit,
                 WorldX = evt.WorldX,
                 WorldY = evt.WorldY - 20f, // чуть выше точки удара
@@ -78,6 +80,17 @@ public class HealthSystem : ITickable
             {
                 if (!world.Has<EnemyDeathState>(id))
                 {
+                    if (world.Has<EnemyTag>(id) && world.Has<Position>(id))
+                    {
+                        ref var enemy = ref world.Get<EnemyTag>(id);
+                        ref var pos = ref world.Get<Position>(id);
+                        _ctx.ItemDropRequests.Add(new ItemDropRequest(
+                            enemy.Type,
+                            pos.X,
+                            pos.Y,
+                            _ctx.CurrentFloor));
+                    }
+
                     world.Add(id, new EnemyDeathState(config.EnemyDeathAnimationDuration));
 
                     // Отключаем боевую и физическую активность, оставляем Sprite+Position для анимации смерти.
