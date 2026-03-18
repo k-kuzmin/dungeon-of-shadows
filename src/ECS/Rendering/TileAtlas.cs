@@ -79,6 +79,23 @@ public static class TileAtlas
         (3, 10),  // right row 2
     };
 
+    // ── Боковая стена на стыке с фасадом (corner junction) ──
+    // Заменяет обычный autotile тайл боковой стены в верхней позиции (у фасада).
+    private static readonly Rectangle _cornerJunctionLeft = new(5 * T, 3 * T, T, T);
+    private static readonly Rectangle _cornerJunctionRight = new(7 * T, 3 * T, T, T);
+
+    // ── Фасад стены (wall face) — переход от стены к полу ──
+    // Рисуется на тайлах пола, у которых сверху (y-1) стена.
+    // Создаёт ощущение высоты стены.
+    private static readonly (int Col, int Row)[] _wallFaceCoords =
+    {
+        (2, 5),   // 0: fill — середина стены
+        (1, 5),   // 1: внешний угол лево
+        (3, 5),   // 2: внешний угол право
+        (13, 2),  // 3: внутренний угол лево (стена слева от пола)
+        (14, 2),  // 4: внутренний угол право (стена справа от пола)
+    };
+
     // ── Лестница ──
     // Координаты определены вручную по atlas_viewer.html.
     private static readonly Rectangle _stairSrc = new(16, 80, 31, 31);
@@ -163,6 +180,18 @@ public static class TileAtlas
     {
         int idx = Math.Clamp(variant, 0, _darkFloorCoords.Length - 1);
         var (col, row) = _darkFloorCoords[idx];
+        return new Rectangle(col * T, row * T, T, T);
+    }
+
+    /// <summary>Возвращает source rect для боковой стены на стыке с фасадом.</summary>
+    /// <param name="floorOnRight">true = пол справа (левая стена, 5,3), false = пол слева (правая стена, 7,3)</param>
+    public static Rectangle GetCornerJunctionSource(bool floorOnRight)
+        => floorOnRight ? _cornerJunctionLeft : _cornerJunctionRight;
+
+    /// <summary>Возвращает source rect для фасада стены (wall face) по варианту (0-4).</summary>
+    public static Rectangle GetWallFaceSource(int variant)
+    {
+        var (col, row) = _wallFaceCoords[Math.Clamp(variant, 0, _wallFaceCoords.Length - 1)];
         return new Rectangle(col * T, row * T, T, T);
     }
 

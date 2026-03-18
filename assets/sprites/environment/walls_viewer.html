@@ -44,6 +44,8 @@
   <label><input type="checkbox" checked data-cat="outer"> Outer corners</label>
   <label><input type="checkbox" checked data-cat="floor"> Пол</label>
   <label><input type="checkbox" checked data-cat="darkfloor"> Тёмный пол</label>
+  <label><input type="checkbox" checked data-cat="wallface"> Wall face</label>
+  <label><input type="checkbox" checked data-cat="junction"> Corner junction</label>
   <label><input type="checkbox" checked data-cat="walltop"> Wall-top</label>
 </div>
 
@@ -106,6 +108,19 @@
     <span class="legend-item"><span class="legend-color" style="background:rgba(80,0,120,0.35)"></span> (10,13) вариант</span>
   </div>
   <div class="legend-section">
+    <b>Wall face (фасад стены)</b>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(255,128,0,0.35)"></span> (2,5) fill</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(255,128,0,0.35)"></span> (1,5) external corner left</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(255,128,0,0.35)"></span> (3,5) external corner right</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(255,128,0,0.35)"></span> (13,2) internal corner left</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(255,128,0,0.35)"></span> (14,2) internal corner right</span>
+  </div>
+  <div class="legend-section">
+    <b>Corner junction (стык боковой стены + фасад)</b>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,255,128,0.35)"></span> (5,3) left wall (пол справа)</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,255,128,0.35)"></span> (7,3) right wall (пол слева)</span>
+  </div>
+  <div class="legend-section">
     <b>Wall-top surface</b>
     <span class="legend-item"><span class="legend-color" style="background:rgba(200,150,0,0.3)"></span> (2,9) center</span>
     <span class="legend-item"><span class="legend-color" style="background:rgba(200,150,0,0.3)"></span> (1,9) left</span>
@@ -155,6 +170,15 @@ const allTiles = [
   {col:10,row:14, cat:'darkfloor', label:'Dark floor var'},
   {col:9,row:13, cat:'darkfloor', label:'Dark floor var'},
   {col:10,row:13, cat:'darkfloor', label:'Dark floor var'},
+  // Wall face
+  {col:2,row:5, cat:'wallface', label:'Wall face fill'},
+  {col:1,row:5, cat:'wallface', label:'Wall face ext corner L'},
+  {col:3,row:5, cat:'wallface', label:'Wall face ext corner R'},
+  {col:13,row:2, cat:'wallface', label:'Wall face int corner L'},
+  {col:14,row:2, cat:'wallface', label:'Wall face int corner R'},
+  // Corner junction
+  {col:5,row:3, cat:'junction', label:'Corner junction left (floor R)'},
+  {col:7,row:3, cat:'junction', label:'Corner junction right (floor L)'},
   // Wall-top
   {col:2,row:9, cat:'walltop', label:'Wall-top center'},
   {col:1,row:9, cat:'walltop', label:'Wall-top left'},
@@ -170,6 +194,8 @@ const catColors = {
   inner: 'rgba(255,100,0,0.35)',
   floor: 'rgba(0,180,0,0.3)',
   darkfloor: 'rgba(80,0,120,0.35)',
+  wallface: 'rgba(255,128,0,0.35)',
+  junction: 'rgba(0,255,128,0.35)',
   walltop: 'rgba(200,150,0,0.3)',
 };
 const innerColors = {
@@ -193,7 +219,7 @@ function buildLookup() {
   return m;
 }
 const lookup = buildLookup();
-let enabledCats = new Set(['wall','inner','outer','floor','darkfloor','walltop']);
+let enabledCats = new Set(['wall','inner','outer','floor','darkfloor','wallface','junction','walltop']);
 let dragging = false, startX = 0, startY = 0, endX = 0, endY = 0;
 
 img.onload = () => {

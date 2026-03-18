@@ -136,8 +136,8 @@ public class TileMap
     {
         for (int x = Math.Min(x1, x2); x <= Math.Max(x1, x2); x++)
         {
-            if (map.InBounds(x, y)) map.Tiles[x, y] = new Tile(TileType.Floor);
-            if (map.InBounds(x, y + 1)) map.Tiles[x, y + 1] = new Tile(TileType.Floor);
+            for (int dy = -1; dy <= 1; dy++)
+                if (map.InBounds(x, y + dy)) map.Tiles[x, y + dy] = new Tile(TileType.Floor);
         }
     }
 
@@ -145,8 +145,8 @@ public class TileMap
     {
         for (int y = Math.Min(y1, y2); y <= Math.Max(y1, y2); y++)
         {
-            if (map.InBounds(x, y)) map.Tiles[x, y] = new Tile(TileType.Floor);
-            if (map.InBounds(x + 1, y)) map.Tiles[x + 1, y] = new Tile(TileType.Floor);
+            for (int dx = -1; dx <= 1; dx++)
+                if (map.InBounds(x + dx, y)) map.Tiles[x + dx, y] = new Tile(TileType.Floor);
         }
     }
 }

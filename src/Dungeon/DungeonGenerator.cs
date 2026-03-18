@@ -74,6 +74,9 @@ public static class DungeonGenerator
         }
         CorridorCarver.CarveCorridors(map, connections, rng);
 
+        // 7.5. Убираем однорядные перегородки (стена с полом по обе стороны)
+        RemoveThinWalls(map);
+
         // 8. Ставим лестницу
         var stairRoom = rooms.First(r => r.Type == RoomType.StairDown);
         map.Tiles[stairRoom.CenterX, stairRoom.CenterY] = new Tile(TileType.StairDown);
@@ -116,6 +119,38 @@ public static class DungeonGenerator
         }
 
         rooms[farthestIdx] = rooms[farthestIdx] with { Type = RoomType.StairDown };
+    }
+
+    /// <summary>
+    /// Убирает стены толщиной в 1 тайл (пол с обеих сторон по горизонтали или вертикали).
+    /// Итеративно — удаление стены может открыть новые тонкие перегородки.
+    /// </summary>
+    private static void RemoveThinWalls(TileMap map)
+    {
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+            for (int x = 1; x < map.Width - 1; x++)
+            {
+                for (int y = 1; y < map.Height - 1; y++)
+                {
+                    if (map.Tiles[x, y].Type != TileType.Wall) continue;
+
+                    bool floorN = map.Tiles[x, y - 1].Type != TileType.Wall;
+                    bool floorS = map.Tiles[x, y + 1].Type != TileType.Wall;
+                    bool floorE = map.Tiles[x + 1, y].Type != TileType.Wall;
+                    bool floorW = map.Tiles[x - 1, y].Type != TileType.Wall;
+
+                    // Стена с полом по обе стороны (N+S или E+W) — перегородка
+                    if ((floorN && floorS) || (floorE && floorW))
+                    {
+                        map.Tiles[x, y] = new Tile(TileType.Floor);
+                        changed = true;
+                    }
+                }
+            }
+        }
     }
 
     private static void FillWithWalls(TileMap map)

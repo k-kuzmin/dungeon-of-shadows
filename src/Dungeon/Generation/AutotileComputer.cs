@@ -48,6 +48,20 @@ internal static class AutotileComputer
                 // Трещины пола отключены (ассеты не подходят для текущего пола)
             }
         }
+
+        // Фасады стен: тайлы пола/лестниц с стеной сверху — non-walkable
+        for (int x = 0; x < map.Width; x++)
+        {
+            for (int y = 1; y < map.Height; y++)
+            {
+                ref var tile = ref map.Tiles[x, y];
+                if ((tile.Type == TileType.Floor || tile.Type == TileType.StairDown)
+                    && map.Tiles[x, y - 1].Type == TileType.Wall)
+                {
+                    tile.Walkable = false;
+                }
+            }
+        }
     }
 
     private static byte ComputeWallIndex(TileMap map, int x, int y)

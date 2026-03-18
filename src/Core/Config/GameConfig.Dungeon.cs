@@ -10,7 +10,7 @@ public partial class GameConfig
     public int DungeonMinRooms { get; init; } = 8;
     public int DungeonMaxRooms { get; init; } = 14;
     public int DungeonMinRoomW { get; init; } = 5;
-    public int DungeonMinRoomH { get; init; } = 4;
+    public int DungeonMinRoomH { get; init; } = 6;
     public int DungeonMaxRoomW { get; init; } = 12;
     public int DungeonMaxRoomH { get; init; } = 10;
     public int DungeonBspMinLeaf { get; init; } = 16; // MaxRoomW + 4 (отступ 2 тайла для стен)
