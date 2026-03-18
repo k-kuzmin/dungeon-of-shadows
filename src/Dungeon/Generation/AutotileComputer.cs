@@ -45,12 +45,7 @@ internal static class AutotileComputer
                         break;
                 }
 
-                // Оверлеи для трещин
-                var deco = map.Decorations[x, y];
-                if (deco == DecorationType.CrackFloor)
-                    tile.OverlayIndex = (byte)(1 + rng.Next(12)); // 12 вариантов трещин пола
-                else if (deco == DecorationType.CrackWall)
-                    tile.OverlayIndex = (byte)(1 + rng.Next(10)); // 10 вариантов трещин стен
+                // Трещины пола отключены (ассеты не подходят для текущего пола)
             }
         }
     }

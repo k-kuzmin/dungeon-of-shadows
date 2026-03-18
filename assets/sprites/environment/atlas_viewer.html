@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Objects.png Atlas Viewer</title>
+<style>
+  body { background: #1a1a2e; color: #eee; font-family: monospace; margin: 20px; }
+  h2 { color: #e94560; }
+  #info { position: fixed; top: 10px; right: 10px; background: #16213e; padding: 12px 18px;
+          border: 2px solid #e94560; border-radius: 8px; font-size: 16px; z-index: 10; min-width: 260px; }
+  #info b { color: #e94560; }
+  .atlas-container { position: relative; display: inline-block; cursor: crosshair; }
+  .atlas-container img { display: block; image-rendering: pixelated; }
+  .grid-overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+  .selection { position: absolute; border: 3px solid #0f0; background: rgba(0,255,0,0.15);
+               pointer-events: none; display: none; z-index: 5; }
+  .instructions { margin: 10px 0 20px; color: #aaa; line-height: 1.6; }
+  .coord-list { margin-top: 20px; background: #16213e; padding: 15px; border-radius: 8px; }
+  .coord-list pre { color: #0f0; margin: 5px 0; }
+  button { background: #e94560; color: #fff; border: none; padding: 8px 16px; cursor: pointer;
+           border-radius: 4px; margin: 5px; font-family: monospace; }
+  button:hover { background: #c81e45; }
+  #selected-list div { padding: 2px 0; }
+</style>
+</head>
+<body>
+<h2>Objects.png — Atlas Viewer (×6 zoom)</h2>
+<div class="instructions">
+  <b>Клик</b> — установить начало выделения &nbsp;|&nbsp;
+  <b>Клик+тянуть</b> — выделить область &nbsp;|&nbsp;
+  <b>Кнопка "Скопировать"</b> — скопировать координаты<br>
+  Координаты показываются в <b>реальных пикселях</b> атласа (не увеличенных).
+</div>
+<div id="info">
+  <div>Мышь: <b id="mx">-</b>, <b id="my">-</b></div>
+  <div>Cell: <b id="cx">-</b>, <b id="cy">-</b> (16×16)</div>
+  <hr style="border-color:#333">
+  <div>Выделение:</div>
+  <div>x=<b id="sx">-</b> y=<b id="sy">-</b> w=<b id="sw">-</b> h=<b id="sh">-</b></div>
+  <button onclick="copyCoords()">Скопировать</button>
+  <button onclick="addToList()">Добавить в список</button>
+</div>
+
+<div class="atlas-container" id="container">
+  <img id="atlas" src="Objects.png" draggable="false">
+  <canvas class="grid-overlay" id="grid"></canvas>
+  <div class="selection" id="sel"></div>
+</div>
+
+<div class="coord-list">
+  <b>Список спрайтов:</b>
+  <div id="selected-list"></div>
+</div>
+
+<script>
+const SCALE = 6;
+const TILE = 16;
+const img = document.getElementById('atlas');
+const grid = document.getElementById('grid');
+const sel = document.getElementById('sel');
+const container = document.getElementById('container');
+
+let dragging = false, startX = 0, startY = 0, endX = 0, endY = 0;
+
+img.onload = () => {
+  const w = img.naturalWidth * SCALE;
+  const h = img.naturalHeight * SCALE;
+  img.style.width = w + 'px';
+  img.style.height = h + 'px';
+  grid.width = w;
+  grid.height = h;
+  grid.style.width = w + 'px';
+  grid.style.height = h + 'px';
+  drawGrid(w, h);
+};
+
+function drawGrid(w, h) {
+  const ctx = grid.getContext('2d');
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= w; x += TILE * SCALE) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y <= h; y += TILE * SCALE) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  // Cell labels
+  ctx.fillStyle = 'rgba(255,255,0,0.5)';
+  ctx.font = '10px monospace';
+  const cols = Math.floor(img.naturalWidth / TILE);
+  const rows = Math.floor(img.naturalHeight / TILE);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      ctx.fillText(`${c},${r}`, c * TILE * SCALE + 2, r * TILE * SCALE + 11);
+    }
+  }
+}
+
+function getReal(e) {
+  const rect = container.getBoundingClientRect();
+  const px = Math.floor((e.clientX - rect.left) / SCALE);
+  const py = Math.floor((e.clientY - rect.top) / SCALE);
+  return [Math.max(0, Math.min(px, img.naturalWidth - 1)),
+          Math.max(0, Math.min(py, img.naturalHeight - 1))];
+}
+
+container.addEventListener('mousemove', (e) => {
+  const [px, py] = getReal(e);
+  document.getElementById('mx').textContent = px;
+  document.getElementById('my').textContent = py;
+  document.getElementById('cx').textContent = Math.floor(px / TILE);
+  document.getElementById('cy').textContent = Math.floor(py / TILE);
+
+  if (dragging) {
+    endX = px; endY = py;
+    updateSel();
+  }
+});
+
+container.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  const [px, py] = getReal(e);
+  startX = px; startY = py; endX = px; endY = py;
+  dragging = true;
+  sel.style.display = 'block';
+  updateSel();
+});
+
+container.addEventListener('mouseup', (e) => {
+  if (!dragging) return;
+  const [px, py] = getReal(e);
+  endX = px; endY = py;
+  dragging = false;
+  updateSel();
+});
+
+function updateSel() {
+  const x1 = Math.min(startX, endX), y1 = Math.min(startY, endY);
+  const x2 = Math.max(startX, endX), y2 = Math.max(startY, endY);
+  const w = x2 - x1 + 1, h = y2 - y1 + 1;
+  sel.style.left = (x1 * SCALE) + 'px';
+  sel.style.top = (y1 * SCALE) + 'px';
+  sel.style.width = (w * SCALE) + 'px';
+  sel.style.height = (h * SCALE) + 'px';
+  document.getElementById('sx').textContent = x1;
+  document.getElementById('sy').textContent = y1;
+  document.getElementById('sw').textContent = w;
+  document.getElementById('sh').textContent = h;
+}
+
+function getSelCoords() {
+  const x1 = Math.min(startX, endX), y1 = Math.min(startY, endY);
+  const x2 = Math.max(startX, endX), y2 = Math.max(startY, endY);
+  return { x: x1, y: y1, w: x2 - x1 + 1, h: y2 - y1 + 1 };
+}
+
+function copyCoords() {
+  const c = getSelCoords();
+  const text = `x=${c.x}, y=${c.y}, w=${c.w}, h=${c.h}`;
+  navigator.clipboard.writeText(text);
+}
+
+function addToList() {
+  const c = getSelCoords();
+  const name = prompt('Имя спрайта (например: Crate, Stair, Barrel):');
+  if (!name) return;
+  const div = document.createElement('div');
+  div.innerHTML = `<pre>${name}: x=${c.x}, y=${c.y}, w=${c.w}, h=${c.h}</pre>`;
+  document.getElementById('selected-list').appendChild(div);
+}
+</script>
+</body>
+</html>

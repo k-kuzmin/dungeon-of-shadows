@@ -46,13 +46,19 @@ public class DecorationObjectRenderSystem : IRenderTickable
             if (map.InBounds(tx, ty) && map.Tiles[tx, ty].Visibility < 2)
                 continue;
 
-            var src = TileAtlas.GetDecoObjectSource(deco.AtlasCol, deco.AtlasRow, deco.SrcWidth, deco.SrcHeight);
+            var src = TileAtlas.GetDecoObjectSource(deco.SrcX, deco.SrcY, deco.SrcWidth, deco.SrcHeight);
             float destW = deco.SrcWidth * scale;
             float destH = deco.SrcHeight * scale;
             float destX = pos.X + ts / 2f - destW / 2f;
             float destY = pos.Y + ts - destH;
             var dest = new Rectangle(destX, destY, destW, destH);
             Raylib.DrawTexturePro(tex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
+
+            if (_ctx.DebugMode)
+            {
+                string label = $"{deco.Type} [{deco.SrcX},{deco.SrcY},{deco.SrcWidth}x{deco.SrcHeight}]";
+                Raylib.DrawText(label, (int)destX - 4, (int)destY - 12, 10, Color.Yellow);
+            }
         }
 
         // Факелы (Animation-based)

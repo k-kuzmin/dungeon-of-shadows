@@ -36,7 +36,6 @@ public class TileRenderSystem : IRenderTickable
         // Текстуры — кешируем в локальные переменные (zero dict lookups в цикле)
         var wallsTex = _assets.GetTexture("walls_floor");
         var crackFloorTex = _assets.GetTexture("cracks_floor");
-        var crackWallTex = _assets.GetTexture("cracks_walls");
         var objectsTex = _assets.GetTexture("objects");
 
         // Frustum culling
@@ -50,6 +49,7 @@ public class TileRenderSystem : IRenderTickable
         int maxX = Math.Min(map.Width - 1, (int)(right / ts) + 1);
         int maxY = Math.Min(map.Height - 1, (int)(bottom / ts) + 1);
 
+        // Проход 1: стены, полы, оверлеи (всё кроме лестниц)
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
@@ -64,6 +64,7 @@ public class TileRenderSystem : IRenderTickable
                 switch (tile.Type)
                 {
                     case TileType.Wall:
+                        DrawFloorBase(wallsTex, destX, destY, ts, scale, tint);
                         DrawWall(wallsTex, ref tile, destX, destY, ts, scale, tint);
                         break;
                     case TileType.Floor:
@@ -71,22 +72,37 @@ public class TileRenderSystem : IRenderTickable
                         break;
                     case TileType.StairDown:
                         DrawFloorBase(wallsTex, destX, destY, ts, scale, tint);
-                        DrawStair(objectsTex, destX, destY, ts, scale, tint);
                         break;
                     default:
                         Raylib.DrawRectangle((int)destX, (int)destY, ts, ts, Color.Black);
                         break;
                 }
 
-                // Оверлей трещин (только на видимых тайлах)
-                if (tile.Visibility == 2 && tile.OverlayIndex > 0)
+                // Оверлей трещин пола (2x2 тайла, центрируется на текущем тайле)
+                if (tile.Type == TileType.Floor && tile.Visibility == 2 && tile.OverlayIndex > 0)
                 {
-                    bool isWall = tile.Type == TileType.Wall;
-                    var crackSrc = TileAtlas.GetCrackSource(tile.OverlayIndex, isWall);
-                    var crackTex = isWall ? crackWallTex : crackFloorTex;
-                    var destRect = new Rectangle(destX, destY, ts, ts);
-                    Raylib.DrawTexturePro(crackTex, crackSrc, destRect, System.Numerics.Vector2.Zero, 0f, FullTint);
+                    var crackSrc = TileAtlas.GetCrackFloorSource(tile.OverlayIndex);
+                    float crackW = crackSrc.Width * scale;
+                    float crackH = crackSrc.Height * scale;
+                    float crackX = destX + ts / 2f - crackW / 2f;
+                    float crackY = destY + ts / 2f - crackH / 2f;
+                    var destRect = new Rectangle(crackX, crackY, crackW, crackH);
+                    Raylib.DrawTexturePro(crackFloorTex, crackSrc, destRect, System.Numerics.Vector2.Zero, 0f, FullTint);
                 }
+            }
+        }
+
+        // Проход 2: лестницы (поверх всех тайлов, чтобы соседние полы не обрезали)
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int y = minY; y <= maxY; y++)
+            {
+                ref var tile = ref map.Tiles[x, y];
+                if (tile.Type != TileType.StairDown) continue;
+                if (tile.Visibility == 0) continue;
+
+                Color tint = tile.Visibility == 1 ? ExploredTint : FullTint;
+                DrawStair(objectsTex, x * ts, y * ts, ts, scale, tint);
             }
         }
     }
@@ -119,7 +135,12 @@ public class TileRenderSystem : IRenderTickable
         int ts, float scale, Color tint)
     {
         var src = TileAtlas.GetStairSource();
-        var dest = new Rectangle(dx, dy - ts, ts, ts * 2);
+        float destW = src.Width * scale;
+        float destH = src.Height * scale;
+        // Центрируем на тайле
+        float destX = dx + ts / 2f - destW / 2f;
+        float destY = dy + ts / 2f - destH / 2f;
+        var dest = new Rectangle(destX, destY, destW, destH);
         Raylib.DrawTexturePro(tex, src, dest, System.Numerics.Vector2.Zero, 0f, tint);
     }
 

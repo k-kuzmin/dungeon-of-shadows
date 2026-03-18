@@ -43,13 +43,13 @@ public static class TileAtlas
     private static readonly (int Col, int Row)[] _floorCoords =
     {
         (2, 8),   // 0: базовый пол
-        (2, 8),   // 1: базовый пол (дубликат для рандомизации)
+        (2, 8),   // 1: базовый пол
         (2, 8),   // 2: базовый пол
         (2, 8),   // 3: базовый пол
-        (2, 8),   // 4: базовый пол
-        (7, 13),  // 5: декор камешки (редкий)
-        (8, 13),  // 6: декор камешки вариант (редкий)
-        (2, 8),   // 7: базовый пол
+        (7, 13),  // 4: вариант
+        (7, 14),  // 5: вариант
+        (8, 13),  // 6: вариант
+        (8, 14),  // 7: вариант
     };
 
     // ── Тёмный пол (у стен) ──
@@ -57,14 +57,14 @@ public static class TileAtlas
     private static readonly (int Col, int Row)[] _darkFloorCoords =
     {
         (12, 14), // 0: база
-        (11, 14), // 1: left edge
-        (13, 14), // 2: right edge
-        (12, 13), // 3: top edge
-        (12, 15), // 4: bottom edge
-        (10, 13), // 5: top-left corner
-        (14, 13), // 6: top-right corner
-        (10, 14), // 7: left inner corner
-        (14, 14), // 8: right inner corner
+        (9, 14),  // 1: вариант
+        (10, 14), // 2: вариант
+        (9, 13),  // 3: вариант
+        (10, 13), // 4: вариант
+        (9, 13),  // 5: top-left corner
+        (10, 13), // 6: top-right corner
+        (9, 14),  // 7: left inner corner
+        (10, 14), // 8: right inner corner
     };
 
     // ── Стена-верхушка (wall top surface, вид сверху) ──
@@ -80,24 +80,17 @@ public static class TileAtlas
     };
 
     // ── Лестница ──
-    // Objects.png col 0, rows 0-1 (каменная лестница 16x32)
-    private static readonly Rectangle _stairSrc = new(0, 0, T, T * 2);
+    // Координаты определены вручную по atlas_viewer.html.
+    private static readonly Rectangle _stairSrc = new(16, 80, 31, 31);
 
     // ── Трещины пола: decorative_cracks_floor.png (8 cols x 15 rows) ──
-    // OverlayIndex 1-12 → координаты в спрайтшите
-    private static readonly (int Col, int Row)[] _crackFloorCoords =
+    // 4 варианта, каждый 2x2 тайла (32x32 px). OverlayIndex 1-4.
+    private static readonly Rectangle[] _crackFloorRects =
     {
-        (0, 0), (1, 0), (2, 0), (3, 0),
-        (4, 0), (5, 0), (6, 0), (7, 0),
-        (0, 1), (1, 1), (2, 1), (3, 1),
-    };
-
-    // ── Трещины стен: decorative_cracks_walls.png (8 cols x 32 rows) ──
-    private static readonly (int Col, int Row)[] _crackWallCoords =
-    {
-        (0, 0), (1, 0), (2, 0), (3, 0),
-        (4, 0), (5, 0), (6, 0), (7, 0),
-        (0, 1), (1, 1),
+        new(0 * T, 12 * T, T * 2, T * 2),  // 1: cols 0-1, rows 12-13
+        new(2 * T, 12 * T, T * 2, T * 2),  // 2: cols 2-3, rows 12-13
+        new(4 * T, 12 * T, T * 2, T * 2),  // 3: cols 4-5, rows 12-13
+        new(6 * T, 12 * T, T * 2, T * 2),  // 4: cols 6-7, rows 12-13
     };
 
     // ── Факелы: fire_animation.png (11 cols x 18 rows, 16x16 grid) ──
@@ -116,19 +109,20 @@ public static class TileAtlas
     };
 
     // ── Сундуки: doors_lever_chest_animation.png (10 cols x 15 rows) ──
-    // Сундуки начинаются примерно с row 8 (y=128).
-    // Простой сундук: 5 кадров по 16x16 начиная с (0, 8*16)
+    // В TMX анимация сундука (tileid=0) идёт вертикально с шагом 30 tileid:
+    // 0 -> 30 -> 60 -> 90 -> 120.
+    // Это соответствует y: 0, 48, 96, 144, 192 (по 3 строки на кадр).
     private static readonly Rectangle[] _chestClosedFrames =
     {
-        new(0, 64, T, T),
+        new(8 * T, 1 * T, T * 2, T * 2),
     };
     private static readonly Rectangle[] _chestOpenFrames =
     {
-        new(0, 64, T, T),   // закрытый
-        new(T, 64, T, T),   // приоткрытый
-        new(T*2, 64, T, T), // полуоткрытый
-        new(T*3, 64, T, T), // почти открытый
-        new(T*4, 64, T, T), // полностью открытый
+        new(8 * T, 1 * T, T * 2, T * 2),    // кадр 0 (18/19 + 28/29)
+        new(8 * T, 4 * T, T * 2, T * 2),    // кадр 1 (48/49 + 58/59)
+        new(8 * T, 7 * T, T * 2, T * 2),    // кадр 2 (78/79 + 88/89)
+        new(8 * T, 10 * T, T * 2, T * 2),   // кадр 3 (108/109 + 118/119)
+        new(8 * T, 13 * T, T * 2, T * 2),   // кадр 4 (138/139 + 148/149)
     };
 
     // ── Objects.png: декоративные объекты (24 cols x 9 rows) ──
@@ -145,8 +139,8 @@ public static class TileAtlas
     public static Rectangle GetWallSource(byte autotileIndex)
     {
         byte idx = Math.Min(autotileIndex, (byte)46);
-        byte mask = _canonicalMasks[idx];
-        return GetWallSourceFromMask(mask);
+        var (col, row) = _wallCoords[idx];
+        return new Rectangle(col * T, row * T, T, T);
     }
 
     /// <summary>Возвращает source rect для верхней поверхности стены (wall-top cap).</summary>
@@ -175,23 +169,12 @@ public static class TileAtlas
     /// <summary>Возвращает source rect для лестницы в Objects.png (16x32).</summary>
     public static Rectangle GetStairSource() => _stairSrc;
 
-    /// <summary>Возвращает source rect для трещины-оверлея.</summary>
-    public static Rectangle GetCrackSource(byte overlayIndex, bool isWall)
+    /// <summary>Возвращает source rect для трещины пола (32x32, 2x2 тайла).</summary>
+    public static Rectangle GetCrackFloorSource(byte overlayIndex)
     {
         if (overlayIndex == 0) return default;
-        int idx = overlayIndex - 1;
-        if (isWall)
-        {
-            idx = Math.Min(idx, _crackWallCoords.Length - 1);
-            var (col, row) = _crackWallCoords[idx];
-            return new Rectangle(col * T, row * T, T, T);
-        }
-        else
-        {
-            idx = Math.Min(idx, _crackFloorCoords.Length - 1);
-            var (col, row) = _crackFloorCoords[idx];
-            return new Rectangle(col * T, row * T, T, T);
-        }
+        int idx = Math.Min(overlayIndex - 1, _crackFloorRects.Length - 1);
+        return _crackFloorRects[idx];
     }
 
     /// <summary>Возвращает source rect для кадра анимации факела (32x48).</summary>
@@ -209,112 +192,9 @@ public static class TileAtlas
     }
 
     /// <summary>Возвращает source rect для декоративного объекта из Objects.png.</summary>
-    public static Rectangle GetDecoObjectSource(int atlasCol, int atlasRow, int srcWidth, int srcHeight)
+    public static Rectangle GetDecoObjectSource(int srcX, int srcY, int srcWidth, int srcHeight)
     {
-        return new Rectangle(atlasCol * T, atlasRow * T, srcWidth, srcHeight);
-    }
-
-    private static readonly byte[] _canonicalMasks =
-    {
-        0,
-        N,
-        E,
-        N | E,
-        N | NE | E,
-        S,
-        N | S,
-        E | S,
-        E | SE | S,
-        N | E | S,
-        N | NE | E | S,
-        N | E | SE | S,
-        N | NE | E | SE | S,
-        W,
-        N | W,
-        N | W | NW,
-        E | W,
-        N | E | W,
-        N | NE | E | W,
-        N | E | W | NW,
-        N | NE | E | W | NW,
-        S | W,
-        S | SW | W,
-        N | S | W,
-        N | S | SW | W,
-        N | S | W | NW,
-        N | S | SW | W | NW,
-        E | S | W,
-        E | SE | S | W,
-        E | S | SW | W,
-        E | SE | S | SW | W,
-        N | E | S | W,
-        N | NE | E | S | W,
-        N | E | SE | S | W,
-        N | E | S | SW | W,
-        N | E | S | W | NW,
-        N | NE | E | SE | S | W,
-        N | NE | E | S | SW | W,
-        N | NE | E | S | W | NW,
-        N | E | SE | S | SW | W,
-        N | E | SE | S | W | NW,
-        N | E | S | SW | W | NW,
-        N | NE | E | SE | S | SW | W,
-        N | NE | E | SE | S | W | NW,
-        N | NE | E | S | SW | W | NW,
-        N | E | SE | S | SW | W | NW,
-        N | NE | E | SE | S | SW | W | NW,
-    };
-
-    private static Rectangle GetWallSourceFromMask(byte mask)
-    {
-        bool n = (mask & N) != 0;
-        bool e = (mask & E) != 0;
-        bool s = (mask & S) != 0;
-        bool w = (mask & W) != 0;
-        int cardinalCount = (n ? 1 : 0) + (e ? 1 : 0) + (s ? 1 : 0) + (w ? 1 : 0);
-
-        if (cardinalCount == 0) return new Rectangle(6 * T, 1 * T, T, T);
-
-        if (cardinalCount == 1)
-        {
-            if (n) return new Rectangle(2 * T, 3 * T, T, T);
-            if (e) return new Rectangle(1 * T, 2 * T, T, T);
-            if (s) return new Rectangle(2 * T, 1 * T, T, T);
-            return new Rectangle(3 * T, 2 * T, T, T);
-        }
-
-        if (cardinalCount == 2)
-        {
-            if ((n && s) || (e && w)) return new Rectangle(2 * T, 4 * T, T, T);
-            if (n && e) return new Rectangle(1 * T, 3 * T, T, T);
-            if (e && s) return new Rectangle(1 * T, 1 * T, T, T);
-            if (s && w) return new Rectangle(3 * T, 1 * T, T, T);
-            return new Rectangle(3 * T, 3 * T, T, T);
-        }
-
-        if (cardinalCount == 3)
-        {
-            if (!n) return new Rectangle(2 * T, 1 * T, T, T);
-            if (!e) return new Rectangle(3 * T, 2 * T, T, T);
-            if (!s) return new Rectangle(2 * T, 3 * T, T, T);
-            return new Rectangle(1 * T, 2 * T, T, T);
-        }
-
-        bool ne = (mask & NE) != 0;
-        bool se = (mask & SE) != 0;
-        bool sw = (mask & SW) != 0;
-        bool nw = (mask & NW) != 0;
-
-        int missingCorners = (ne ? 0 : 1) + (se ? 0 : 1) + (sw ? 0 : 1) + (nw ? 0 : 1);
-        if (missingCorners == 1)
-        {
-            if (!ne) return new Rectangle(9 * T, 1 * T, T, T);
-            if (!se) return new Rectangle(9 * T, 2 * T, T, T);
-            if (!sw) return new Rectangle(7 * T, 0 * T, T, T);
-            return new Rectangle(7 * T, 1 * T, T, T);
-        }
-
-        return new Rectangle(2 * T, 2 * T, T, T);
+        return new Rectangle(srcX, srcY, srcWidth, srcHeight);
     }
 
     // ═══════════════════════════════════════════════════
@@ -368,7 +248,7 @@ public static class TileAtlas
         coords[5] = (2, 1);
 
         // 6:  N+S — вертикальная стена (пол слева и справа)
-        coords[6] = (2, 4);
+        coords[6] = (2, 2);
 
         // 7:  E+S (no SE) — верхний-левый внешний угол
         coords[7] = (1, 1);
@@ -398,7 +278,7 @@ public static class TileAtlas
         coords[15] = (3, 3);
 
         // 16: E+W — горизонтальная стена
-        coords[16] = (2, 4);
+        coords[16] = (2, 2);
 
         // 17: N+E+W (no corners) — стена T-образная сверху, пол снизу
         coords[17] = (2, 3);
@@ -445,31 +325,34 @@ public static class TileAtlas
         // Все 4 кардинала = стена. Разница — какие углы заполнены.
         // Внутренние углы (выемки) показываются через тайлы из cols 9-15, rows 0-3.
         // Для данного тайлсета внутренние углы:
-        //   (9, 1) = inner corner NE (выемка в правом верхнем углу)
-        //   (7, 1) = inner corner NW (выемка в левом верхнем углу)
-        //   (9, 2) = inner corner SE (выемка в правом нижнем углу)
-        //   (7, 0) = inner corner SW (выемка в левом нижнем углу)
+        //   (7, 1) = inner corner NE (выемка в правом верхнем углу)
+        //   (5, 1) = inner corner NW (выемка в левом верхнем углу)
+        //   (7, 4) = inner corner SE (выемка в правом нижнем углу)
+        //   (5, 4) = inner corner SW (выемка в левом нижнем углу)
         //
         // "Missing corner X" означает что X-сосед = пол → рисуем выемку в этом углу.
         // Если не хватает нескольких углов — используем solid fill (этот тайлсет не имеет
         // комбинированных inner corner тайлов).
 
-        // 31: all cardinal, NO corners — 4 выемки. Используем solid (нет такого тайла).
+        // 31: all cardinal, NO corners — 4 выемки.
         coords[31] = (2, 2);
 
-        // 32: +NE (NE заполнен, SE/SW/NW пустые) — 3 выемки → solid fill
+        // Для частичных заполнений внутренних углов используем ближайшие corner-тайлы,
+        // чтобы не терять силуэт внутренних выемок.
+
+        // 32: +NE (SE/SW/NW пустые)
         coords[32] = (2, 2);
 
-        // 33: +SE — 3 выемки
+        // 33: +SE (NE/NW/SW пустые)
         coords[33] = (2, 2);
 
-        // 34: +SW — 3 выемки
+        // 34: +SW (NE/SE/NW пустые)
         coords[34] = (2, 2);
 
-        // 35: +NW — 3 выемки
+        // 35: +NW (NE/SE/SW пустые)
         coords[35] = (2, 2);
 
-        // 36: +NE+SE — NW и SW пустые → solid fill (2 выемки, нет тайла)
+        // 36: +NE+SE — NW и SW пустые
         coords[36] = (2, 2);
 
         // 37: +NE+SW — NW и SE пустые
@@ -487,17 +370,17 @@ public static class TileAtlas
         // 41: +SW+NW — NE и SE пустые
         coords[41] = (2, 2);
 
-        // 42: +NE+SE+SW — только NW пустой → выемка NW
-        coords[42] = (7, 1);
+        // 42: +NE+SE+SW — только NW пустой → inner corner NW
+        coords[42] = (7, 4);
 
-        // 43: +NE+SE+NW — только SW пустой → выемка SW
-        coords[43] = (7, 0);
+        // 43: +NE+SE+NW — только SW пустой → inner corner SW
+        coords[43] = (7, 1);
 
-        // 44: +NE+SW+NW — только SE пустой → выемка SE
-        coords[44] = (9, 2);
+        // 44: +NE+SW+NW — только SE пустой → inner corner SE
+        coords[44] = (5, 1);
 
-        // 45: +SE+SW+NW — только NE пустой → выемка NE
-        coords[45] = (9, 1);
+        // 45: +SE+SW+NW — только NE пустой → inner corner NE
+        coords[45] = (5, 4);
 
         // 46: fully surrounded (all 8 neighbors = wall) — solid fill
         coords[46] = (2, 2);

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>walls_floor.png — Full Atlas Viewer</title>
+<style>
+  body { background: #1a1a2e; color: #eee; font-family: monospace; margin: 20px; }
+  h2 { color: #e94560; }
+  #info { position: fixed; top: 10px; right: 10px; background: #16213e; padding: 12px 18px;
+          border: 2px solid #e94560; border-radius: 8px; font-size: 14px; z-index: 10; min-width: 320px; max-height: 90vh; overflow-y: auto; }
+  #info b { color: #e94560; }
+  .atlas-container { position: relative; display: inline-block; cursor: crosshair; }
+  .atlas-container img { display: block; image-rendering: pixelated; }
+  .grid-overlay, .highlight-overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+  .selection { position: absolute; border: 3px solid #0f0; background: rgba(0,255,0,0.15);
+               pointer-events: none; display: none; z-index: 5; }
+  .instructions { margin: 10px 0 20px; color: #aaa; line-height: 1.6; }
+  .legend { margin: 20px 0; background: #16213e; padding: 15px; border-radius: 8px; columns: 2; column-gap: 20px; }
+  .legend-section { break-inside: avoid; margin-bottom: 12px; }
+  .legend-section b { color: #e94560; display: block; margin-bottom: 4px; }
+  .legend-item { display: block; margin: 2px 0; font-size: 12px; }
+  .legend-color { display: inline-block; width: 12px; height: 12px; vertical-align: middle; margin-right: 4px; border: 1px solid #555; }
+  button { background: #e94560; color: #fff; border: none; padding: 6px 14px; cursor: pointer;
+           border-radius: 4px; margin: 3px; font-family: monospace; font-size: 12px; }
+  button:hover { background: #c81e45; }
+  #selected-list { margin-top: 8px; }
+  #selected-list pre { color: #0f0; margin: 2px 0; font-size: 11px; }
+  .filter-bar { margin: 10px 0; }
+  .filter-bar label { margin-right: 12px; font-size: 12px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h2>walls_floor.png — Full Atlas Viewer (x4 zoom)</h2>
+<div class="instructions">
+  <b>Наведи мышь</b> — координаты и текущее назначение тайла &nbsp;|&nbsp;
+  <b>Клик+тяни</b> — выделить область<br>
+  Цветные подсветки = все тайлы, используемые в коде (TileAtlas.cs)
+</div>
+
+<div class="filter-bar">
+  <b>Показать:</b>
+  <label><input type="checkbox" checked data-cat="wall"> Стены (blob)</label>
+  <label><input type="checkbox" checked data-cat="inner"> Inner corners</label>
+  <label><input type="checkbox" checked data-cat="outer"> Outer corners</label>
+  <label><input type="checkbox" checked data-cat="floor"> Пол</label>
+  <label><input type="checkbox" checked data-cat="darkfloor"> Тёмный пол</label>
+  <label><input type="checkbox" checked data-cat="walltop"> Wall-top</label>
+</div>
+
+<div id="info">
+  <div>Pixel: <b id="mx">-</b>, <b id="my">-</b></div>
+  <div>Cell: <b id="cx">-</b>, <b id="cy">-</b></div>
+  <div style="margin-top:4px">Назначение: <b id="mapping" style="color:#0f0">-</b></div>
+  <hr style="border-color:#333">
+  <div>Выделение: x=<b id="sx">-</b> y=<b id="sy">-</b> w=<b id="sw">-</b> h=<b id="sh">-</b></div>
+  <button onclick="copyCoords()">Скопировать col,row</button>
+  <button onclick="addToList()">Добавить</button>
+  <div id="selected-list"></div>
+</div>
+
+<div class="atlas-container" id="container">
+  <img id="atlas" src="walls_floor.png" draggable="false">
+  <canvas class="grid-overlay" id="grid"></canvas>
+  <canvas class="highlight-overlay" id="highlights"></canvas>
+  <div class="selection" id="sel"></div>
+</div>
+
+<div class="legend">
+  <div class="legend-section">
+    <b>Стены — blob autotile</b>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(180,80,80,0.4)"></span> (6,1) isolated — idx 0</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(100,100,180,0.3)"></span> (2,1) top edge — idx 5,27-30</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(100,100,180,0.3)"></span> (2,3) bottom edge — idx 1,17-20</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(100,100,180,0.3)"></span> (1,2) left edge — idx 2,9-12</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(100,100,180,0.3)"></span> (3,2) right edge — idx 13,23-26</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(180,0,180,0.3)"></span> (2,2) solid fill — idx 6,16,31-41,46</span>
+  </div>
+  <div class="legend-section">
+    <b>Outer corners</b>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,200,200,0.3)"></span> (1,1) TL — idx 7-8</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,200,200,0.3)"></span> (3,1) TR — idx 21-22</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,200,200,0.3)"></span> (1,3) BL — idx 3-4</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,200,200,0.3)"></span> (3,3) BR — idx 14-15</span>
+  </div>
+  <div class="legend-section">
+    <b>Inner corners</b>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(255,0,0,0.4)"></span> (7,4) inner NW — idx 42</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,255,0,0.4)"></span> (7,1) inner SW — idx 43</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,100,255,0.4)"></span> (5,1) inner SE — idx 44</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(255,255,0,0.4)"></span> (5,4) inner NE — idx 45</span>
+  </div>
+  <div class="legend-section">
+    <b>Пол</b>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,180,0,0.3)"></span> (2,8) base floor — var 0-3</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,180,0,0.3)"></span> (7,13) вариант — var 4</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,180,0,0.3)"></span> (7,14) вариант — var 5</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,180,0,0.3)"></span> (8,13) вариант — var 6</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(0,180,0,0.3)"></span> (8,14) вариант — var 7</span>
+  </div>
+  <div class="legend-section">
+    <b>Тёмный пол (у стен)</b>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(80,0,120,0.35)"></span> (12,14) base</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(80,0,120,0.35)"></span> (9,14) вариант</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(80,0,120,0.35)"></span> (10,14) вариант</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(80,0,120,0.35)"></span> (9,13) вариант</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(80,0,120,0.35)"></span> (10,13) вариант</span>
+  </div>
+  <div class="legend-section">
+    <b>Wall-top surface</b>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(200,150,0,0.3)"></span> (2,9) center</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(200,150,0,0.3)"></span> (1,9) left</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(200,150,0,0.3)"></span> (3,9) right</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(200,150,0,0.3)"></span> (2,10) center r2</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(200,150,0,0.3)"></span> (1,10) left r2</span>
+    <span class="legend-item"><span class="legend-color" style="background:rgba(200,150,0,0.3)"></span> (3,10) right r2</span>
+  </div>
+</div>
+
+<script>
+const SCALE = 4;
+const TILE = 16;
+const img = document.getElementById('atlas');
+const grid = document.getElementById('grid');
+const hl = document.getElementById('highlights');
+const sel = document.getElementById('sel');
+const container = document.getElementById('container');
+
+const allTiles = [
+  // Walls — edges
+  {col:6,row:1, cat:'wall', label:'Isolated (idx 0)'},
+  {col:2,row:1, cat:'wall', label:'Top edge (idx 5,27-30)'},
+  {col:2,row:3, cat:'wall', label:'Bottom edge (idx 1,17-20)'},
+  {col:1,row:2, cat:'wall', label:'Left edge (idx 2,9-12)'},
+  {col:3,row:2, cat:'wall', label:'Right edge (idx 13,23-26)'},
+  {col:2,row:2, cat:'wall', label:'Solid fill (idx 6,16,31-41,46)'},
+  // Outer corners
+  {col:1,row:1, cat:'outer', label:'Outer TL (idx 7-8)'},
+  {col:3,row:1, cat:'outer', label:'Outer TR (idx 21-22)'},
+  {col:1,row:3, cat:'outer', label:'Outer BL (idx 3-4)'},
+  {col:3,row:3, cat:'outer', label:'Outer BR (idx 14-15)'},
+  // Inner corners
+  {col:7,row:4, cat:'inner', label:'Inner NW (idx 42)'},
+  {col:7,row:1, cat:'inner', label:'Inner SW (idx 43)'},
+  {col:5,row:1, cat:'inner', label:'Inner SE (idx 44)'},
+  {col:5,row:4, cat:'inner', label:'Inner NE (idx 45)'},
+  // Floor
+  {col:2,row:8, cat:'floor', label:'Base floor (var 0-3)'},
+  {col:7,row:13, cat:'floor', label:'Floor var 4'},
+  {col:7,row:14, cat:'floor', label:'Floor var 5'},
+  {col:8,row:13, cat:'floor', label:'Floor var 6'},
+  {col:8,row:14, cat:'floor', label:'Floor var 7'},
+  // Dark floor
+  {col:12,row:14, cat:'darkfloor', label:'Dark floor base'},
+  {col:9,row:14, cat:'darkfloor', label:'Dark floor var'},
+  {col:10,row:14, cat:'darkfloor', label:'Dark floor var'},
+  {col:9,row:13, cat:'darkfloor', label:'Dark floor var'},
+  {col:10,row:13, cat:'darkfloor', label:'Dark floor var'},
+  // Wall-top
+  {col:2,row:9, cat:'walltop', label:'Wall-top center'},
+  {col:1,row:9, cat:'walltop', label:'Wall-top left'},
+  {col:3,row:9, cat:'walltop', label:'Wall-top right'},
+  {col:2,row:10, cat:'walltop', label:'Wall-top center r2'},
+  {col:1,row:10, cat:'walltop', label:'Wall-top left r2'},
+  {col:3,row:10, cat:'walltop', label:'Wall-top right r2'},
+];
+
+const catColors = {
+  wall: 'rgba(100,100,180,0.25)',
+  outer: 'rgba(0,200,200,0.3)',
+  inner: 'rgba(255,100,0,0.35)',
+  floor: 'rgba(0,180,0,0.3)',
+  darkfloor: 'rgba(80,0,120,0.35)',
+  walltop: 'rgba(200,150,0,0.3)',
+};
+const innerColors = {
+  '7,4': 'rgba(255,0,0,0.4)',
+  '7,1': 'rgba(0,255,0,0.4)',
+  '5,1': 'rgba(0,100,255,0.4)',
+  '5,4': 'rgba(255,255,0,0.4)',
+};
+
+function tileColor(t) {
+  const key = `${t.col},${t.row}`;
+  if (t.cat === 'inner' && innerColors[key]) return innerColors[key];
+  if (t.col===6 && t.row===1) return 'rgba(180,80,80,0.4)';
+  if (t.col===2 && t.row===2) return 'rgba(180,0,180,0.3)';
+  return catColors[t.cat] || 'rgba(128,128,128,0.2)';
+}
+
+function buildLookup() {
+  const m = {};
+  for (const t of allTiles) m[`${t.col},${t.row}`] = t;
+  return m;
+}
+const lookup = buildLookup();
+let enabledCats = new Set(['wall','inner','outer','floor','darkfloor','walltop']);
+let dragging = false, startX = 0, startY = 0, endX = 0, endY = 0;
+
+img.onload = () => {
+  const w = img.naturalWidth * SCALE, h = img.naturalHeight * SCALE;
+  img.style.width = w + 'px'; img.style.height = h + 'px';
+  grid.width = w; grid.height = h;
+  grid.style.width = w + 'px'; grid.style.height = h + 'px';
+  hl.width = w; hl.height = h;
+  hl.style.width = w + 'px'; hl.style.height = h + 'px';
+  drawGrid(w, h);
+  drawHighlights();
+};
+
+function drawGrid(w, h) {
+  const ctx = grid.getContext('2d');
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= w; x += TILE*SCALE) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for (let y = 0; y <= h; y += TILE*SCALE) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(255,255,0,0.35)';
+  ctx.font = '9px monospace';
+  const cols = Math.floor(img.naturalWidth / TILE), rows = Math.floor(img.naturalHeight / TILE);
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      ctx.fillText(`${c},${r}`, c*TILE*SCALE+2, r*TILE*SCALE+10);
+}
+
+function drawHighlights() {
+  const ctx = hl.getContext('2d');
+  ctx.clearRect(0, 0, hl.width, hl.height);
+  for (const t of allTiles) {
+    if (!enabledCats.has(t.cat)) continue;
+    const x = t.col*TILE*SCALE, y = t.row*TILE*SCALE, s = TILE*SCALE;
+    const c = tileColor(t);
+    ctx.fillStyle = c;
+    ctx.fillRect(x, y, s, s);
+    ctx.strokeStyle = c.replace(/[\d.]+\)$/, '0.8)');
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x+1, y+1, s-2, s-2);
+  }
+}
+
+document.querySelectorAll('.filter-bar input').forEach(cb => {
+  cb.addEventListener('change', () => {
+    if (cb.checked) enabledCats.add(cb.dataset.cat); else enabledCats.delete(cb.dataset.cat);
+    drawHighlights();
+  });
+});
+
+function getReal(e) {
+  const rect = container.getBoundingClientRect();
+  const px = Math.floor((e.clientX - rect.left) / SCALE);
+  const py = Math.floor((e.clientY - rect.top) / SCALE);
+  return [Math.max(0, Math.min(px, img.naturalWidth-1)), Math.max(0, Math.min(py, img.naturalHeight-1))];
+}
+
+container.addEventListener('mousemove', (e) => {
+  const [px, py] = getReal(e);
+  const cx = Math.floor(px/TILE), cy = Math.floor(py/TILE);
+  document.getElementById('mx').textContent = px;
+  document.getElementById('my').textContent = py;
+  document.getElementById('cx').textContent = cx;
+  document.getElementById('cy').textContent = cy;
+  const t = lookup[`${cx},${cy}`];
+  document.getElementById('mapping').textContent = t ? `${t.label} [${t.cat}]` : 'не используется';
+  if (dragging) { endX = px; endY = py; updateSel(); }
+});
+
+container.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  const [px, py] = getReal(e);
+  startX = px; startY = py; endX = px; endY = py;
+  dragging = true; sel.style.display = 'block'; updateSel();
+});
+container.addEventListener('mouseup', (e) => {
+  if (!dragging) return;
+  const [px, py] = getReal(e); endX = px; endY = py; dragging = false; updateSel();
+});
+
+function updateSel() {
+  const x1 = Math.min(startX, endX), y1 = Math.min(startY, endY);
+  const x2 = Math.max(startX, endX), y2 = Math.max(startY, endY);
+  const w = x2 - x1 + 1, h = y2 - y1 + 1;
+  sel.style.left = (x1*SCALE)+'px'; sel.style.top = (y1*SCALE)+'px';
+  sel.style.width = (w*SCALE)+'px'; sel.style.height = (h*SCALE)+'px';
+  document.getElementById('sx').textContent = x1; document.getElementById('sy').textContent = y1;
+  document.getElementById('sw').textContent = w; document.getElementById('sh').textContent = h;
+}
+
+function copyCoords() {
+  const x1 = Math.min(startX, endX), y1 = Math.min(startY, endY);
+  navigator.clipboard.writeText(`col=${Math.floor(x1/TILE)}, row=${Math.floor(y1/TILE)}`);
+}
+
+function addToList() {
+  const x1 = Math.min(startX, endX), y1 = Math.min(startY, endY);
+  const name = prompt('Назначение:');
+  if (!name) return;
+  const div = document.createElement('div');
+  div.innerHTML = `<pre>${name}: col=${Math.floor(x1/TILE)}, row=${Math.floor(y1/TILE)}</pre>`;
+  document.getElementById('selected-list').appendChild(div);
+}
+</script>
+</body>
+</html>

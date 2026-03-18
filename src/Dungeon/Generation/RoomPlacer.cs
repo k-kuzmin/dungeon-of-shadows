@@ -24,18 +24,18 @@ internal static class RoomPlacer
         {
             if (result.Count >= targetCount) break;
 
-            // Отступ 1 тайл от границ листа для стен
-            int availW = leaf.Width - 2;
-            int availH = leaf.Height - 2;
+            // Отступ 2 тайла от границ листа — минимальная толщина стен между комнатами
+            int availW = leaf.Width - 4;
+            int availH = leaf.Height - 4;
 
             if (availW < minW || availH < minH) continue;
 
             int roomW = rng.Next(minW, Math.Min(maxW, availW) + 1);
             int roomH = rng.Next(minH, Math.Min(maxH, availH) + 1);
 
-            // Случайная позиция внутри листа (с отступом)
-            int roomX = leaf.X + 1 + rng.Next(availW - roomW + 1);
-            int roomY = leaf.Y + 1 + rng.Next(availH - roomH + 1);
+            // Случайная позиция внутри листа (с отступом 2)
+            int roomX = leaf.X + 2 + rng.Next(availW - roomW + 1);
+            int roomY = leaf.Y + 2 + rng.Next(availH - roomH + 1);
 
             result[leaf] = new Room
             {

@@ -92,9 +92,22 @@ public class FloorLifecycleSystem : IStartable, ITickable
     private void SpawnFloorEntities()
     {
         var world = _world;
+        int ts = _config.ScaledTileSize;
+
         EnemySpawner.SpawnEnemies(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
         ChestSpawner.SpawnChests(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
-        DecorationObjectSpawner.SpawnObjects(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
+
+        // Собираем тайлы, занятые уже заспавненными entity (враги, сундуки),
+        // чтобы декор не спавнился поверх них.
+        var occupied = new HashSet<(int, int)>();
+        world.QueryInto<Position>(_queryBuffer);
+        for (int i = 0; i < _queryBuffer.Count; i++)
+        {
+            ref var pos = ref world.Get<Position>(_queryBuffer[i]);
+            occupied.Add(((int)(pos.X / ts), (int)(pos.Y / ts)));
+        }
+
+        DecorationObjectSpawner.SpawnObjects(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed, occupied);
         TorchSpawner.SpawnTorches(world, _ctx.Map, _config);
     }
 

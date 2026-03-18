@@ -27,7 +27,7 @@ public static class ChestSpawner
         for (int i = 0; i < map.Rooms.Count && spawned < target; i++)
         {
             var room = map.Rooms[i];
-            if (room.Type == RoomType.Spawn) continue;
+            if (room.Type == RoomType.Spawn || room.Type == RoomType.StairDown) continue;
 
             if (rng.NextDouble() > 0.5)
                 continue;

@@ -8,23 +8,17 @@ namespace DungeonOfShadows.ECS.Rendering;
 /// </summary>
 public static class DecorationObjectSpawner
 {
-    // Определения объектов: (тип, col в Objects.png, row, ширина, высота в px)
-    private static readonly (DecorationObjectType Type, int Col, int Row, int W, int H)[] _templates =
+    // Определения объектов: (тип, srcX, srcY, ширина, высота в px).
+    // Координаты определены вручную по atlas_viewer.html — спрайты в Objects.png нестрого по сетке.
+    private static readonly (DecorationObjectType Type, int X, int Y, int W, int H)[] _templates =
     {
-        (DecorationObjectType.Barrel,      4, 0, 16, 16),
-        (DecorationObjectType.Barrel,      5, 0, 16, 16),
-        (DecorationObjectType.BarrelBroken, 6, 0, 16, 16),
-        (DecorationObjectType.Crate,       14, 0, 16, 16),
-        (DecorationObjectType.Crate,       15, 0, 16, 16),
-        (DecorationObjectType.Sack,        19, 0, 16, 16),
-        (DecorationObjectType.Sack,        20, 0, 16, 16),
-        (DecorationObjectType.Rock,        9, 0, 16, 16),
-        (DecorationObjectType.Rock,        12, 0, 16, 16),
-        (DecorationObjectType.RockSmall,   10, 0, 16, 16),
-        (DecorationObjectType.RockSmall,   11, 0, 16, 16),
+        (DecorationObjectType.Barrel,      111, 79, 17, 25),
+        (DecorationObjectType.Crate,       176, 79, 15, 23),
+        (DecorationObjectType.CrateStack,  335, 47, 32, 32),
     };
 
-    public static void SpawnObjects(World world, TileMap map, GameConfig config, int floor, int seed)
+    public static void SpawnObjects(World world, TileMap map, GameConfig config, int floor, int seed,
+        HashSet<(int, int)>? occupiedTiles = null)
     {
         var rng = new Random(seed ^ (floor * 7_919) ^ 0xDEC0);
         int ts = config.ScaledTileSize;
@@ -43,6 +37,7 @@ public static class DecorationObjectSpawner
                     if (map.Tiles[x, y].Type != TileType.Floor) continue;
                     if (!map.Tiles[x, y].Walkable) continue;
                     if (map.Decorations[x, y] != DecorationType.None) continue;
+                    if (occupiedTiles != null && occupiedTiles.Contains((x, y))) continue;
 
                     bool nearWall = IsAdjacentToWall(map, x, y);
                     int effectiveChance = nearWall ? chancePercent * 2 : chancePercent;
@@ -56,15 +51,14 @@ public static class DecorationObjectSpawner
                     world.Add(entityId, new DecorationObject
                     {
                         Type = template.Type,
-                        AtlasCol = template.Col,
-                        AtlasRow = template.Row,
+                        SrcX = template.X,
+                        SrcY = template.Y,
                         SrcWidth = template.W,
                         SrcHeight = template.H,
                     });
 
-                    bool blocksTile = template.Type is DecorationObjectType.Barrel
-                        or DecorationObjectType.BarrelBroken
-                        or DecorationObjectType.Crate
+                    // Блокируем тайл только для явно массивных объектов.
+                    bool blocksTile = template.Type is DecorationObjectType.Crate
                         or DecorationObjectType.CrateStack;
                     if (blocksTile)
                         map.Tiles[x, y].Walkable = false;
