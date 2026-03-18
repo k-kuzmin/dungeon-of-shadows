@@ -14,6 +14,10 @@ public class CameraSystem : ITickable
     private float _shakeTimer;
     private float _shakeAmplitude;
 
+    // Чистая позиция камеры без shake — lerp не заражается дрожанием
+    private Vector2 _baseTarget;
+    private bool _baseInitialized;
+
     public CameraSystem(GameContext ctx, World world, GameConfig config)
     {
         _ctx = ctx;
@@ -31,26 +35,36 @@ public class CameraSystem : ITickable
             float half = _config.ScaledTileSize / 2f;
             var targetPos = new Vector2(pos.X + half, pos.Y + half);
 
-            float smoothing = 1f - MathF.Pow(_config.CameraSmoothBase, dt);
-            _ctx.Camera = _ctx.Camera with
+            if (!_baseInitialized)
             {
-                Target = System.Numerics.Vector2.Lerp(_ctx.Camera.Target, targetPos, smoothing)
-            };
+                _baseTarget = targetPos;
+                _baseInitialized = true;
+            }
+            else
+            {
+                float smoothing = 1f - MathF.Pow(_config.CameraSmoothBase, dt);
+                _baseTarget = Vector2.Lerp(_baseTarget, targetPos, smoothing);
+            }
         }
 
-        // Screen shake
+        // Pixel-snap: округляем до целых пикселей чтобы убрать суб-пиксельные щели между тайлами
+        float zoom = _ctx.Camera.Zoom;
+        float snappedX = MathF.Round(_baseTarget.X * zoom) / zoom;
+        float snappedY = MathF.Round(_baseTarget.Y * zoom) / zoom;
+        var finalTarget = new Vector2(snappedX, snappedY);
+
+        // Screen shake поверх snap — не загрязняет _baseTarget для следующего кадра
         if (_shakeTimer > 0)
         {
             _shakeTimer -= dt;
             float intensity = _shakeAmplitude * (_shakeTimer / _config.ScreenShakeDuration);
-            _ctx.Camera = _ctx.Camera with
-            {
-                Target = _ctx.Camera.Target + new Vector2(
-                    (float)(_rng.NextDouble() * 2 - 1) * intensity,
-                    (float)(_rng.NextDouble() * 2 - 1) * intensity
-                )
-            };
+            finalTarget += new Vector2(
+                (float)(_rng.NextDouble() * 2 - 1) * intensity,
+                (float)(_rng.NextDouble() * 2 - 1) * intensity
+            );
         }
+
+        _ctx.Camera = _ctx.Camera with { Target = finalTarget };
     }
 
     public void TriggerShake(float? amplitude = null)
