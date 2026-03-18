@@ -32,7 +32,8 @@ public class CombatRenderSystem : IRenderTickable
 
     public void Tick(float dt)
     {
-        DrawSlashArcs();
+        if (_ctx.DebugMode)
+            DrawSlashArcs();
         DrawEnemyHealthBars();
         DrawDamageNumbers();
     }
@@ -115,7 +116,8 @@ public class CombatRenderSystem : IRenderTickable
             int barW = (int)(ts * 0.8f);
             int barH = 4;
             int barX = (int)(pos.X + ts * 0.1f);
-            int barY = (int)(pos.Y - 6);
+            // Под ногами спрайта (нижняя граница тайла + небольшой отступ)
+            int barY = (int)(pos.Y + ts + 2);
 
             float fraction = (float)health.HP / health.MaxHP;
 

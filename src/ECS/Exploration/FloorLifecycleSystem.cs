@@ -61,14 +61,14 @@ public class FloorLifecycleSystem : IStartable, ITickable
         if (_queryBuffer.Count == 0) return;
         int playerId = _queryBuffer[0];
 
-        // Уничтожаем всех не-игроков
-        var toDestroy = new List<int>();
+        // Уничтожаем всех не-игроков (переиспользуем буфер)
+        _queryBuffer.Clear();
         foreach (int id in world.AllEntities)
         {
             if (id == playerId || !world.IsAlive(id)) continue;
-            toDestroy.Add(id);
+            _queryBuffer.Add(id);
         }
-        foreach (int id in toDestroy)
+        foreach (int id in _queryBuffer)
             world.DestroyEntity(id);
 
         // Генерация нового этажа
@@ -134,6 +134,12 @@ public class FloorLifecycleSystem : IStartable, ITickable
         world.Add(playerId, new Inventory(_config.InventorySlots));
         world.Add(playerId, new Equipment());
         world.Add(playerId, new QuickSlots(init: true));
+
+        // Анимация героя
+        var clips = CharacterAnimationBuilder.BuildHero(_config);
+        var initialClip = clips["Idle_Down"];
+        world.Add(playerId, new Animator(clips, "Idle_Down"));
+        world.Add(playerId, new Animation(initialClip));
     }
 
     private void SnapCameraToPlayer()

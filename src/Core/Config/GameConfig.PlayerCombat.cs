@@ -6,7 +6,7 @@ public partial class GameConfig
     public float PlayerSpeed { get; init; } = 5.5f;
 
     // Combat — player melee
-    public float PlayerMeleeRange { get; init; } = 1.8f;
+    public float PlayerMeleeRange { get; init; } = 2.5f;
     public float PlayerMeleeDuration { get; init; } = 0.18f;
     public float PlayerMeleeCooldown { get; init; } = 0.35f;
     public float PlayerMeleeArcRadians { get; init; } = 1.57f; // ~90°

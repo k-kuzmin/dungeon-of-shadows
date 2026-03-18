@@ -16,8 +16,10 @@ public class AISystem : ITickable
     private readonly List<int> _playerBuffer = new();
     private readonly Random _rng = new();
 
-    // Кеш путей (entity id → путь)
+    // Кеш путей (entity id → путь + текущий индекс waypoint-а)
     private readonly Dictionary<int, List<(int x, int y)>> _paths = new();
+    private readonly Dictionary<int, int> _pathIndices = new();
+    private readonly Stack<List<(int x, int y)>> _pathPool = new();
     private readonly List<(int x, int y)> _tempPath = new();
     private readonly List<int> _deadPathIds = new();
 
@@ -89,6 +91,11 @@ public class AISystem : ITickable
             {
                 enemy.State = AiState.Attack;
             }
+            else if (distInTiles <= enemy.AttackRange)
+            {
+                // В зоне атаки, но кулдаун — стоим на месте и ждём
+                enemy.State = AiState.Idle;
+            }
             else if (distInTiles <= enemy.DetectionRadius)
             {
                 enemy.State = AiState.Chase;
@@ -147,7 +154,11 @@ public class AISystem : ITickable
                 _deadPathIds.Add(cachedId);
 
         foreach (int deadId in _deadPathIds)
-            _paths.Remove(deadId);
+        {
+            if (_paths.Remove(deadId, out var deadPath))
+                _pathPool.Push(deadPath);
+            _pathIndices.Remove(deadId);
+        }
     }
 
     private void ExecutePatrol(ref EnemyTag enemy, ref Position pos, ref Velocity vel,
@@ -249,17 +260,22 @@ public class AISystem : ITickable
 
             if (_pathfinder.TryFindPath(map, enemyTX, enemyTY, playerTX, playerTY, _tempPath))
             {
-                if (!_paths.ContainsKey(id))
-                    _paths[id] = new List<(int, int)>();
-                _paths[id].Clear();
-                _paths[id].AddRange(_tempPath);
+                if (!_paths.TryGetValue(id, out var existing))
+                {
+                    existing = _pathPool.Count > 0 ? _pathPool.Pop() : new List<(int, int)>();
+                    _paths[id] = existing;
+                }
+                existing.Clear();
+                existing.AddRange(_tempPath);
+                _pathIndices[id] = 0;
             }
         }
 
-        if (_paths.TryGetValue(id, out var path) && path.Count > 0)
+        _pathIndices.TryGetValue(id, out int pathIdx);
+        if (_paths.TryGetValue(id, out var path) && pathIdx < path.Count)
         {
-            float targetX = path[0].x * ts + ts / 2f;
-            float targetY = path[0].y * ts + ts / 2f;
+            float targetX = path[pathIdx].x * ts + ts / 2f;
+            float targetY = path[pathIdx].y * ts + ts / 2f;
             float cx = pos.X + ts / 2f;
             float cy = pos.Y + ts / 2f;
 
@@ -269,7 +285,7 @@ public class AISystem : ITickable
 
             if (dist < ts * config.AiChaseWaypointReachDistanceTiles)
             {
-                path.RemoveAt(0);
+                _pathIndices[id] = pathIdx + 1;
             }
             else
             {
@@ -320,7 +336,8 @@ public class AISystem : ITickable
         }
 
         enemy.AttackCooldown = enemy.AttackCooldownMax;
-        enemy.State = AiState.Chase;
+        // State НЕ переключаем — transitions на следующем кадре поставят Idle (в зоне, кулдаун)
+        // или Chase (вне зоны). Это даёт CharacterAnimationStateSystem увидеть Attack стейт.
 
         ref var playerStats = ref _world.Get<Stats>(playerId);
         var (damage, isCrit) = DamageCalculator.Compute(

@@ -8,6 +8,7 @@ using DungeonOfShadows.ECS.Physics.Systems;
 using DungeonOfShadows.ECS.Exploration.Systems;
 using DungeonOfShadows.ECS.Items;
 using DungeonOfShadows.ECS.Items.Systems;
+using DungeonOfShadows.ECS.Rendering;
 using DungeonOfShadows.ECS.Rendering.Systems;
 
 namespace DungeonOfShadows.Core;
@@ -47,6 +48,7 @@ public static class ServiceRegistration
         services.AddInterfaces<DamageNumberSystem>();
         services.AddInterfaces<FloorTransitionSystem>();
         services.AddInterfaces<FovSystem>();
+        services.AddInterfaces<CharacterAnimationStateSystem>();
         services.AddInterfaces<AnimationSystem>();
         services.AddInterfaces<CameraSystem>();
         services.AddInterfaces<RenderSystem>();

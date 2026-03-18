@@ -34,8 +34,7 @@
 - Keep gameplay tuning values in `src/Core/GameConfig.cs` (avoid magic numbers in systems).
 
 ## Conventions
-- For new logic systems, use `services.AddTickable<MySystem>();`.
-- For new render subsystems, use `services.AddRenderTickable<MyRenderSystem>();`.
+- For new systems (logic or render), use `services.AddInterfaces<MySystem>();` — it auto-detects all implemented interfaces.
 - Feature-oriented structure is required under `src/ECS/`:
   - `Core`, `Player`, `Physics`, `Exploration`, `Rendering`, `Combat`
 - Match namespace to folder structure (for example, `DungeonOfShadows.ECS.Physics.Systems` for files in `src/ECS/Physics/`).

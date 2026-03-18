@@ -32,7 +32,8 @@ public class AnimationSystem : ITickable
             if (world.Has<Animator>(id))
             {
                 ref var animator = ref world.Get<Animator>(id);
-                var targetClip = animator.Clips[animator.CurrentClip];
+                if (!animator.Clips.TryGetValue(animator.CurrentClip, out var targetClip))
+                    continue;
 
                 if (!ReferenceEquals(anim.Clip, targetClip))
                 {

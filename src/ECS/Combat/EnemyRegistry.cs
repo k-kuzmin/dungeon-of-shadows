@@ -14,9 +14,10 @@ public static class EnemyRegistry
         BaseDEF: 0,
         Speed: 4.0f,
         DetectionRadius: 5.5f,
-        AttackRange: 0.9f,
+        AttackRange: 2.0f,
         AttackCooldown: 1.2f,
-        Tint: new Color(140, 100, 80, 255) // коричневый
+        Tint: new Color(140, 100, 80, 255), // коричневый
+        SpritePrefix: "orc1"
     );
 
     public static EnemyTemplate Goblin => new(
@@ -26,9 +27,10 @@ public static class EnemyRegistry
         BaseDEF: 1,
         Speed: 3.5f,
         DetectionRadius: 6.0f,
-        AttackRange: 1.0f,
+        AttackRange: 2.0f,
         AttackCooldown: 1.5f,
-        Tint: new Color(80, 160, 60, 255) // зелёный
+        Tint: new Color(80, 160, 60, 255), // зелёный
+        SpritePrefix: "orc2"
     );
 
     public static EnemyTemplate Skeleton => new(
@@ -38,9 +40,10 @@ public static class EnemyRegistry
         BaseDEF: 2,
         Speed: 2.5f,
         DetectionRadius: 4.5f,
-        AttackRange: 1.1f,
+        AttackRange: 2.0f,
         AttackCooldown: 2.2f,
-        Tint: new Color(200, 200, 190, 255) // бледный
+        Tint: new Color(200, 200, 190, 255), // бледный
+        SpritePrefix: "orc3"
     );
 
     public static EnemyTemplate Get(EnemyType type) => type switch

@@ -42,24 +42,46 @@ public class CombatInputSystem : ITickable
             !world.Has<MeleeAttack>(playerId) &&
             !world.Has<MeleeCooldown>(playerId))
         {
-            var mouseScreen = Raylib.GetMousePosition();
-            var mouseWorld = Raylib.GetScreenToWorld2D(mouseScreen, _ctx.Camera);
+            float dx, dy;
 
-            float dx = mouseWorld.X - playerCenterX;
-            float dy = mouseWorld.Y - playerCenterY;
-            float len = MathF.Sqrt(dx * dx + dy * dy);
-
-            if (len > 0.01f)
+            // Если двигаемся — сектор атаки по направлению движения (RunAttack)
+            bool moving = false;
+            if (world.Has<Velocity>(playerId))
             {
-                dx /= len;
-                dy /= len;
+                ref var vel = ref world.Get<Velocity>(playerId);
+                if (vel.X != 0 || vel.Y != 0)
+                {
+                    float vlen = MathF.Sqrt(vel.X * vel.X + vel.Y * vel.Y);
+                    dx = vel.X / vlen;
+                    dy = vel.Y / vlen;
+                    moving = true;
+                }
+                else { dx = 0; dy = 0; }
             }
-            else
+            else { dx = 0; dy = 0; }
+
+            // Если стоим — сектор атаки по направлению к мыши
+            if (!moving)
             {
-                // Если мышь точно на игроке — атакуем в направлении взгляда
-                ref var player = ref world.Get<PlayerTag>(playerId);
-                dx = player.FacingX;
-                dy = player.FacingY;
+                var mouseScreen = Raylib.GetMousePosition();
+                var mouseWorld = Raylib.GetScreenToWorld2D(mouseScreen, _ctx.Camera);
+
+                dx = mouseWorld.X - playerCenterX;
+                dy = mouseWorld.Y - playerCenterY;
+                float len = MathF.Sqrt(dx * dx + dy * dy);
+
+                if (len > 0.01f)
+                {
+                    dx /= len;
+                    dy /= len;
+                }
+                else
+                {
+                    // Если мышь точно на игроке — атакуем в направлении взгляда
+                    ref var player = ref world.Get<PlayerTag>(playerId);
+                    dx = player.FacingX;
+                    dy = player.FacingY;
+                }
             }
 
             world.Add(playerId, new MeleeAttack

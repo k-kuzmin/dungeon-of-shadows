@@ -35,6 +35,6 @@ public partial class GameConfig
     public float AfterimageStartAlpha { get; init; } = 0.5f;
     public float AfterimageLifetime { get; init; } = 0.25f;
 
-    // Combat — enemy death
-    public float EnemyDeathAnimationDuration { get; init; } = 0.35f;
+    // Combat — enemy death (увеличено для проигрывания полной анимации смерти)
+    public float EnemyDeathAnimationDuration { get; init; } = 1.0f;
 }

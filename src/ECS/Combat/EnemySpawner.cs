@@ -1,5 +1,6 @@
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
+using DungeonOfShadows.ECS.Rendering;
 
 namespace DungeonOfShadows.ECS.Combat;
 
@@ -73,5 +74,11 @@ public static class EnemySpawner
             StrafeDir = 1,
             AttackWindupTimer = 0
         });
+
+        // Анимация врага
+        var clips = CharacterAnimationBuilder.BuildEnemy(template.SpritePrefix, config);
+        var initialClip = clips["Idle_Down"];
+        world.Add(id, new Animator(clips, "Idle_Down"));
+        world.Add(id, new Animation(initialClip));
     }
 }

@@ -9,5 +9,6 @@ public readonly record struct EnemyTemplate(
     float DetectionRadius,
     float AttackRange,
     float AttackCooldown,
-    Raylib_cs.Color Tint
+    Raylib_cs.Color Tint,
+    string SpritePrefix
 );

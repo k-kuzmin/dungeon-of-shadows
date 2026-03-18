@@ -42,9 +42,9 @@ IStartable.Start()  →  ITickable.Tick(dt)  →  IDisposable.Dispose()
 
 **Добавление любой системы:**
 ```csharp
-services.AddSystem<MyNewSystem>();
+services.AddInterfaces<MyNewSystem>();
 ```
-Одна строка — `AddSystem<T>()` автоматически детектит реализованные интерфейсы (`IStartable`, `ITickable`, `IRenderTickable`, `IDisposable`) и регистрирует всё нужное. Добавление `IDisposable` к системе **не требует** правки `ServiceRegistration`.
+Одна строка — `AddInterfaces<T>()` автоматически детектит реализованные интерфейсы (`IStartable`, `ITickable`, `IRenderTickable`, `IDisposable`) и регистрирует всё нужное. Добавление `IDisposable` к системе **не требует** правки `ServiceRegistration`.
 
 Порядок вызовов `AddSystem` = порядок Start/Tick/Draw/Dispose.
 
@@ -156,12 +156,14 @@ ItemUseSystem         → применение предметов (зелья, �
 DamageNumberSystem    → float-up чисел урона
 FloorTransitionSystem → детектит лестницу + ставит FloorTransitionRequested
 FovSystem             → туман войны
+AnimationSystem       → покадровая анимация спрайтов
 CameraSystem          → камера (тикает всегда)
 RenderSystem          → обёртка рендера (тикает всегда)
   ├─ TileRenderSystem      (World) — тайлы + декор + FOV
   ├─ EntityRenderSystem    (World) — сущности + FOV + DamageFlash + afterimage
   ├─ CombatRenderSystem    (World) — дуга атаки, HP-бары врагов, числа урона
   ├─ ItemRenderSystem      (World) — предметы на земле, сундуки
+  ├─ DecorationObjectRenderSystem (World) — декоративные объекты
   ├─ DebugRenderSystem     (World) — сетка + коллайдеры
   ├─ HudRenderSystem       (Screen) — FPS, этаж, HP игрока, мини-карта
   └─ InventoryRenderSystem (Screen) — UI инвентаря, экипировка, быстрые слоты
