@@ -3,6 +3,8 @@ using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
 using DungeonOfShadows.ECS.Combat;
 using DungeonOfShadows.ECS.Items;
+using DungeonOfShadows.ECS.Magic;
+using DungeonOfShadows.ECS.Magic.Components;
 using DungeonOfShadows.ECS.Rendering;
 
 namespace DungeonOfShadows.ECS.Exploration.Systems;
@@ -86,6 +88,16 @@ public class FloorLifecycleSystem : IStartable, ITickable
         vel.X = 0;
         vel.Y = 0;
 
+        // Очистка transient компонентов на игроке
+        if (world.Has<SpellCastRequest>(playerId))
+            world.Remove<SpellCastRequest>(playerId);
+        if (world.Has<StatusEffects>(playerId))
+            world.Remove<StatusEffects>(playerId);
+        if (world.Has<SlowDebuff>(playerId))
+            world.Remove<SlowDebuff>(playerId);
+        if (world.Has<Invincible>(playerId))
+            world.Remove<Invincible>(playerId);
+
         SpawnFloorEntities();
     }
 
@@ -130,10 +142,14 @@ public class FloorLifecycleSystem : IStartable, ITickable
         world.Add(playerId, new PlayerTag(_config.PlayerSpeed));
         world.Add(playerId, new Health(_config.PlayerBaseHP, _config.PlayerBaseHP));
         world.Add(playerId, new Stats(_config.PlayerBaseATK, _config.PlayerBaseDEF,
-            _config.PlayerSpeed, _config.PlayerBaseCrit));
+            _config.PlayerSpeed, _config.PlayerBaseCrit, _config.PlayerBaseINT));
         world.Add(playerId, new Inventory(_config.InventorySlots));
         world.Add(playerId, new Equipment());
         world.Add(playerId, new QuickSlots(init: true));
+        world.Add(playerId, new Mana(_config.PlayerBaseMana, _config.PlayerBaseMana));
+        var spellSlots = new SpellSlots(init: true);
+        spellSlots.Slot0SpellId = 1; // Magic Bolt по умолчанию
+        world.Add(playerId, spellSlots);
 
         // Анимация героя
         var clips = CharacterAnimationBuilder.BuildHero(_config);

@@ -94,5 +94,83 @@
     "dropWeightRat": 2,
     "dropWeightGoblin": 9,
     "dropWeightSkeleton": 16
+  },
+  {
+    "id": 400,
+    "name": "Scroll: Magic Bolt",
+    "type": "SpellScroll",
+    "minFloor": 1,
+    "maxStack": 1,
+    "effectType": "TeachSpell",
+    "effectPower": 0,
+    "spellId": 1,
+    "dropWeightRat": 8,
+    "dropWeightGoblin": 6,
+    "dropWeightSkeleton": 4
+  },
+  {
+    "id": 401,
+    "name": "Scroll: Fireball",
+    "type": "SpellScroll",
+    "minFloor": 2,
+    "maxStack": 1,
+    "effectType": "TeachSpell",
+    "effectPower": 0,
+    "spellId": 2,
+    "dropWeightRat": 2,
+    "dropWeightGoblin": 5,
+    "dropWeightSkeleton": 6
+  },
+  {
+    "id": 402,
+    "name": "Scroll: Frost Nova",
+    "type": "SpellScroll",
+    "minFloor": 2,
+    "maxStack": 1,
+    "effectType": "TeachSpell",
+    "effectPower": 0,
+    "spellId": 3,
+    "dropWeightRat": 3,
+    "dropWeightGoblin": 5,
+    "dropWeightSkeleton": 5
+  },
+  {
+    "id": 403,
+    "name": "Scroll: Chain Lightning",
+    "type": "SpellScroll",
+    "minFloor": 3,
+    "maxStack": 1,
+    "effectType": "TeachSpell",
+    "effectPower": 0,
+    "spellId": 4,
+    "dropWeightRat": 1,
+    "dropWeightGoblin": 3,
+    "dropWeightSkeleton": 6
+  },
+  {
+    "id": 404,
+    "name": "Scroll: Shadow Step",
+    "type": "SpellScroll",
+    "minFloor": 2,
+    "maxStack": 1,
+    "effectType": "TeachSpell",
+    "effectPower": 0,
+    "spellId": 5,
+    "dropWeightRat": 2,
+    "dropWeightGoblin": 4,
+    "dropWeightSkeleton": 5
+  },
+  {
+    "id": 405,
+    "name": "Scroll: Heal",
+    "type": "SpellScroll",
+    "minFloor": 1,
+    "maxStack": 1,
+    "effectType": "TeachSpell",
+    "effectPower": 0,
+    "spellId": 6,
+    "dropWeightRat": 5,
+    "dropWeightGoblin": 5,
+    "dropWeightSkeleton": 4
   }
 ]

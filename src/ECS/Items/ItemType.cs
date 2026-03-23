@@ -7,5 +7,6 @@ public enum ItemType
     Amulet,
     Ring,
     Potion,
-    Scroll
+    Scroll,
+    SpellScroll
 }

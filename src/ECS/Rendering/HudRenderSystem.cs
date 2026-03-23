@@ -1,6 +1,7 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
+using DungeonOfShadows.ECS.Magic.Components;
 
 namespace DungeonOfShadows.ECS.Rendering.Systems;
 
@@ -19,6 +20,9 @@ public class HudRenderSystem : IRenderTickable
     private int _cachedHp = -1;
     private int _cachedMaxHp = -1;
     private string _cachedHpText = "";
+    private int _cachedMp = -1;
+    private int _cachedMaxMp = -1;
+    private string _cachedMpText = "";
 
     public RenderPhase Phase => RenderPhase.Screen;
 
@@ -35,6 +39,9 @@ public class HudRenderSystem : IRenderTickable
     private static readonly Color HpBarBg = new(40, 40, 40, 200);
     private static readonly Color HpBarFull = new(50, 200, 60, 255);
     private static readonly Color HpBarLow = new(200, 50, 50, 255);
+
+    // Цвет MP бара
+    private static readonly Color MpBarColor = new(30, 100, 220, 255);
 
     public HudRenderSystem(GameContext ctx, World world, GameConfig config)
     {
@@ -53,6 +60,9 @@ public class HudRenderSystem : IRenderTickable
 
         // HP бар игрока
         DrawPlayerHpBar();
+
+        // MP бар игрока
+        DrawPlayerMpBar();
 
         // Номер этажа
         if (_cachedFloor != _ctx.CurrentFloor)
@@ -82,7 +92,7 @@ public class HudRenderSystem : IRenderTickable
         int barW = 200;
         int barH = 16;
 
-        float fraction = (float)health.HP / health.MaxHP;
+        float fraction = health.MaxHP > 0 ? (float)health.HP / health.MaxHP : 0f;
 
         // Интерполяция цвета от красного к зелёному
         var barColor = new Raylib_cs.Color(
@@ -105,6 +115,35 @@ public class HudRenderSystem : IRenderTickable
 
         int textW = Raylib.MeasureText(_cachedHpText, 14);
         Raylib.DrawText(_cachedHpText, barX + barW / 2 - textW / 2, barY + 1, 14, Color.White);
+    }
+
+    private void DrawPlayerMpBar()
+    {
+        _world.QueryInto<PlayerTag, Mana>(_queryBuffer);
+        if (_queryBuffer.Count == 0) return;
+
+        ref var mana = ref _world.Get<Mana>(_queryBuffer[0]);
+
+        int barX = 10;
+        int barY = _ctx.DebugMode ? 70 : 50;
+        int barW = 200;
+        int barH = 12;
+
+        float fraction = mana.MaxMP > 0 ? (float)mana.MP / mana.MaxMP : 0f;
+
+        Raylib.DrawRectangle(barX, barY, barW, barH, HpBarBg);
+        Raylib.DrawRectangle(barX, barY, (int)(barW * fraction), barH, MpBarColor);
+        Raylib.DrawRectangleLines(barX, barY, barW, barH, Color.White);
+
+        if (_cachedMp != mana.MP || _cachedMaxMp != mana.MaxMP)
+        {
+            _cachedMp = mana.MP;
+            _cachedMaxMp = mana.MaxMP;
+            _cachedMpText = _cachedMp + "/" + _cachedMaxMp;
+        }
+
+        int textW = Raylib.MeasureText(_cachedMpText, 12);
+        Raylib.DrawText(_cachedMpText, barX + barW / 2 - textW / 2, barY + 0, 12, Color.White);
     }
 
     private void DrawMinimap()

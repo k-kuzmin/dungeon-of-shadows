@@ -184,6 +184,14 @@ public sealed class ItemDatabase : IStartable
         Add(new ItemDefinition { Id = 103, Name = "Copper Amulet", Type = ItemType.Amulet, BaseHP = 8, DropWeightRat = 3, DropWeightGoblin = 7, DropWeightSkeleton = 9 });
         Add(new ItemDefinition { Id = 200, Name = "Health Potion", Type = ItemType.Potion, MaxStack = 10, EffectType = ItemEffectType.HealHp, EffectPower = 30, DropWeightRat = 20, DropWeightGoblin = 20, DropWeightSkeleton = 12 });
         Add(new ItemDefinition { Id = 300, Name = "Scroll of Nova", Type = ItemType.Scroll, MaxStack = 10, EffectType = ItemEffectType.NovaDamage, EffectPower = 18, MinFloor = 2, DropWeightRat = 2, DropWeightGoblin = 9, DropWeightSkeleton = 16 });
+
+        // Свитки заклинаний
+        Add(new ItemDefinition { Id = 400, Name = "Scroll: Magic Bolt", Type = ItemType.SpellScroll, EffectType = ItemEffectType.TeachSpell, SpellId = 1, DropWeightRat = 8, DropWeightGoblin = 6, DropWeightSkeleton = 4 });
+        Add(new ItemDefinition { Id = 401, Name = "Scroll: Fireball", Type = ItemType.SpellScroll, EffectType = ItemEffectType.TeachSpell, SpellId = 2, MinFloor = 2, DropWeightRat = 2, DropWeightGoblin = 5, DropWeightSkeleton = 6 });
+        Add(new ItemDefinition { Id = 402, Name = "Scroll: Frost Nova", Type = ItemType.SpellScroll, EffectType = ItemEffectType.TeachSpell, SpellId = 3, MinFloor = 2, DropWeightRat = 3, DropWeightGoblin = 5, DropWeightSkeleton = 5 });
+        Add(new ItemDefinition { Id = 403, Name = "Scroll: Chain Lightning", Type = ItemType.SpellScroll, EffectType = ItemEffectType.TeachSpell, SpellId = 4, MinFloor = 3, DropWeightRat = 1, DropWeightGoblin = 3, DropWeightSkeleton = 6 });
+        Add(new ItemDefinition { Id = 404, Name = "Scroll: Shadow Step", Type = ItemType.SpellScroll, EffectType = ItemEffectType.TeachSpell, SpellId = 5, MinFloor = 2, DropWeightRat = 2, DropWeightGoblin = 4, DropWeightSkeleton = 5 });
+        Add(new ItemDefinition { Id = 405, Name = "Scroll: Heal", Type = ItemType.SpellScroll, EffectType = ItemEffectType.TeachSpell, SpellId = 6, DropWeightRat = 5, DropWeightGoblin = 5, DropWeightSkeleton = 4 });
     }
 
     private void Add(ItemDefinition def)

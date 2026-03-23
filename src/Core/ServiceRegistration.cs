@@ -8,6 +8,8 @@ using DungeonOfShadows.ECS.Physics.Systems;
 using DungeonOfShadows.ECS.Exploration.Systems;
 using DungeonOfShadows.ECS.Items;
 using DungeonOfShadows.ECS.Items.Systems;
+using DungeonOfShadows.ECS.Magic;
+using DungeonOfShadows.ECS.Magic.Systems;
 using DungeonOfShadows.ECS.Rendering;
 using DungeonOfShadows.ECS.Rendering.Systems;
 
@@ -30,17 +32,23 @@ public static class ServiceRegistration
         // Services
         services.AddSingleton<AStarPathfinder>();
         services.AddInterfaces<ItemDatabase>();
+        services.AddInterfaces<SpellDatabase>();
 
         // Systems — registration order = tick/start/draw order
         services.AddInterfaces<FloorLifecycleSystem>();
         services.AddInterfaces<InputSystem>();
         services.AddInterfaces<InventoryInputSystem>();
         services.AddInterfaces<CombatInputSystem>();
+        services.AddInterfaces<SpellInputSystem>();
+        services.AddInterfaces<SpellCastSystem>();
         services.AddInterfaces<DashSystem>();
         services.AddInterfaces<PhysicsSystem>();
+        services.AddInterfaces<ProjectileSystem>();
         services.AddInterfaces<MeleeAttackSystem>();
         services.AddInterfaces<AISystem>();
+        services.AddInterfaces<StatusEffectSystem>();
         services.AddInterfaces<HealthSystem>();
+        services.AddInterfaces<ManaSystem>();
         services.AddInterfaces<ItemDropSystem>();
         services.AddInterfaces<ItemPickupSystem>();
         services.AddInterfaces<ChestSystem>();
@@ -57,10 +65,12 @@ public static class ServiceRegistration
         services.AddInterfaces<TileRenderSystem>();
         services.AddInterfaces<EntityRenderSystem>();
         services.AddInterfaces<CombatRenderSystem>();
+        services.AddInterfaces<SpellRenderSystem>();
         services.AddInterfaces<ItemRenderSystem>();
         services.AddInterfaces<DecorationObjectRenderSystem>();
         services.AddInterfaces<DebugRenderSystem>();
         services.AddInterfaces<HudRenderSystem>();
+        services.AddInterfaces<MagicHudRenderSystem>();
         services.AddInterfaces<InventoryRenderSystem>();
 
         // Game

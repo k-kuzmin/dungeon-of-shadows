@@ -1,6 +1,8 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
 using DungeonOfShadows.ECS.Combat;
+using DungeonOfShadows.ECS.Magic;
+using DungeonOfShadows.ECS.Magic.Components;
 
 namespace DungeonOfShadows.ECS.Items.Systems;
 
@@ -62,10 +64,22 @@ public class ItemUseSystem : ITickable
             return;
         }
 
-        if (def.Type == ItemType.Scroll && quick.ScrollCooldown > 0)
+        if (def.Type is ItemType.Scroll or ItemType.SpellScroll && quick.ScrollCooldown > 0)
         {
             ShowMessage("Scroll cooldown");
             return;
+        }
+
+        // Для SpellScroll проверяем возможность обучения ДО потребления предмета
+        if (def.EffectType == ItemEffectType.TeachSpell)
+        {
+            if (!_world.Has<SpellSlots>(playerId)) { ShowMessage("No spell slots"); return; }
+            ref var slots = ref _world.Get<SpellSlots>(playerId);
+            if (!MagicHelper.CanLearnSpell(ref slots, def.SpellId))
+            {
+                ShowMessage("Already known or slots full");
+                return;
+            }
         }
 
         if (!TryConsume(ref inv, definitionId))
@@ -78,7 +92,7 @@ public class ItemUseSystem : ITickable
 
         if (def.Type == ItemType.Potion)
             quick.PotionCooldown = _config.PotionCooldownSeconds;
-        if (def.Type == ItemType.Scroll)
+        if (def.Type is ItemType.Scroll or ItemType.SpellScroll)
             quick.ScrollCooldown = _config.ScrollCooldownSeconds;
     }
 
@@ -145,6 +159,25 @@ public class ItemUseSystem : ITickable
             }
 
             ShowMessage("Nova cast");
+        }
+
+        if (def.EffectType == ItemEffectType.TeachSpell)
+        {
+            if (!world.Has<SpellSlots>(playerId))
+            {
+                ShowMessage("No spell slots");
+                return;
+            }
+
+            ref var slots = ref world.Get<SpellSlots>(playerId);
+            if (MagicHelper.TryLearnSpell(ref slots, def.SpellId))
+            {
+                ShowMessage("Learned spell");
+            }
+            else
+            {
+                ShowMessage("Cannot learn");
+            }
         }
     }
 

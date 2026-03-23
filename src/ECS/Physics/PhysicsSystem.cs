@@ -1,5 +1,6 @@
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
+using DungeonOfShadows.ECS.Magic.Components;
 
 namespace DungeonOfShadows.ECS.Physics.Systems;
 
@@ -33,22 +34,33 @@ public class PhysicsSystem : ITickable
 
             if (vel.X == 0 && vel.Y == 0) continue;
 
+            // Замедление от магических эффектов
+            float slowMul = 1f;
+            if (world.Has<SlowDebuff>(id))
+            {
+                ref var debuff = ref world.Get<SlowDebuff>(id);
+                slowMul = debuff.Factor;
+            }
+
+            float velX = vel.X * slowMul;
+            float velY = vel.Y * slowMul;
+
             if (world.Has<Collider>(id))
             {
                 ref var col = ref world.Get<Collider>(id);
 
-                float newX = pos.X + vel.X * dt;
+                float newX = pos.X + velX * dt;
                 if (!CollidesWithWalls(map, newX, pos.Y, ref col, tileSize))
                     pos.X = newX;
 
-                float newY = pos.Y + vel.Y * dt;
+                float newY = pos.Y + velY * dt;
                 if (!CollidesWithWalls(map, pos.X, newY, ref col, tileSize))
                     pos.Y = newY;
             }
             else
             {
-                pos.X += vel.X * dt;
-                pos.Y += vel.Y * dt;
+                pos.X += velX * dt;
+                pos.Y += velY * dt;
             }
         }
     }

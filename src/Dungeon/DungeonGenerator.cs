@@ -8,7 +8,7 @@ public static class DungeonGenerator
     /// <summary>
     /// Генерирует этаж подземелья по номеру этажа и сиду.
     /// </summary>
-    private const int MaxRetries = 10;
+    private const int MaxRetries = 50;
 
     public static GenerationResult Generate(int floorNumber, GameConfig config, int seed)
     {
@@ -20,7 +20,7 @@ public static class DungeonGenerator
         // Ретраи при недостаточном количестве комнат
         for (int attempt = 0; attempt < MaxRetries; attempt++)
         {
-            var rng = new Random(seed ^ (floorNumber * 1_000_003) ^ attempt);
+            var rng = new Random(seed ^ (floorNumber * 1_000_003) ^ (attempt * 7_919 + 1));
             var result = TryGenerate(floorNumber, config, mapW, mapH, rng);
             if (result != null) return result.Value;
         }

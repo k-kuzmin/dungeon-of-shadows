@@ -4,5 +4,6 @@ public enum ItemEffectType
 {
     None,
     HealHp,
-    NovaDamage
+    NovaDamage,
+    TeachSpell
 }

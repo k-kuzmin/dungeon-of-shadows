@@ -7,11 +7,11 @@
 | 1 | **Core** — Окно, тайлы, движение, коллизии, камера | Завершено ✓ | [phase_1_core.md](phase_1_core.md) |
 | 2 | **Dungeon** — BSP-генерация, FOV, мини-карта | Завершено ✓ | [phase_2_dungeon.md](phase_2_dungeon.md) |
 | 3 | **Combat** — Атака мечом, враги, AI, дэш | Завершено ✓ | [phase_3_combat.md](phase_3_combat.md) |
-| 4 | **Items** — Лут, инвентарь, экипировка, зелья | Не начато | [phase_4_items.md](phase_4_items.md) |
-| 5 | **Magic** — Мана, 6 заклинаний, проджектайлы, AoE | Не начато | [phase_5_magic.md](phase_5_magic.md) |
+| 4 | **Items** — Лут, инвентарь, экипировка, зелья | Завершено ✓ | [phase_4_items.md](phase_4_items.md) |
+| 5 | **Magic** — Мана, 6 заклинаний, проджектайлы, AoE | Завершено ✓ | [phase_5_magic.md](phase_5_magic.md) |
 | 6 | **Progression** — XP, уровни, дерево перков | Не начато | [phase_6_progression.md](phase_6_progression.md) |
 | 7 | **Bosses** — 3 уникальных босса, фазы, арены | Не начато | [phase_7_bosses.md](phase_7_bosses.md) |
-| 8 | **Art** — Пиксель-арт, анимации, частицы, UI | Не начато | [phase_8_art.md](phase_8_art.md) |
+| 8 | **Art** — Пиксель-арт, анимации, частицы, UI | Частично ✓ (8.1+8.2) | [phase_8_art.md](phase_8_art.md) |
 | 9 | **Polish** — Звуки, баланс, багфиксы, NativeAOT | Не начато | [phase_9_polish.md](phase_9_polish.md) |
 
 ---
@@ -41,6 +41,9 @@
 
 ## Актуально на сейчас
 
-- Фазы **1** и **2** полностью реализованы и используются в текущем build.
+- Фазы **1–5** полностью реализованы и используются в текущем build.
 - Фаза **3** завершена: melee combat с cooldown, 3 типа врагов с AI/паттернами, dash, HP UI, damage events и death animation.
-- Фазы **4-9** остаются запланированными.
+- Фаза **4** завершена: лут, инвентарь, экипировка, зелья, свитки, сундуки, quick slots UI.
+- Фаза **5** завершена: мана, 6 заклинаний (Magic Bolt, Fireball, Frost Nova, Chain Lightning, Shadow Step, Heal), проджектайлы, AoE, статус-эффекты (Burn DoT, Slow), spell scrolls, spell slots HUD.
+- Фаза **8** частично: тайлы + декор (8.1+8.2), анимированные персонажи (8.3).
+- Фазы **6, 7, 9** остаются запланированными.

@@ -18,10 +18,13 @@ public sealed class ItemDefinition
     public ItemEffectType EffectType { get; set; } = ItemEffectType.None;
     public int EffectPower { get; set; }
 
+    /// <summary>ID заклинания для SpellScroll (EffectType == TeachSpell).</summary>
+    public int SpellId { get; set; }
+
     public int DropWeightRat { get; set; }
     public int DropWeightGoblin { get; set; }
     public int DropWeightSkeleton { get; set; }
 
     [JsonIgnore]
-    public bool IsStackable => Type is ItemType.Potion or ItemType.Scroll;
+    public bool IsStackable => Type is ItemType.Potion or ItemType.Scroll or ItemType.SpellScroll;
 }

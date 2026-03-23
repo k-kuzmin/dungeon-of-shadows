@@ -129,8 +129,26 @@ public interface IAssetProvider : IDisposable
 ### DamageEvent очередь
 
 Урон передаётся через `List<DamageEvent>` на `GameContext`:
-- **Продьюсеры**: `MeleeAttackSystem`, `AISystem` — пишут события
+- **Продьюсеры**: `MeleeAttackSystem`, `AISystem`, `ProjectileSystem`, `StatusEffectSystem` — пишут события
 - **Консьюмер**: `HealthSystem` — читает, применяет урон, спавнит DamageFlash/DamageNumber, дренит список
+
+### SpellDatabase
+
+Загрузка заклинаний из JSON (`assets/data/spells.json`) с fallback на хардкод. Реализует `IStartable`. Используется системами каста для получения параметров заклинания по ID.
+
+### MagicHelper
+
+Статический класс с переиспользуемыми утилитами магической системы:
+- `SpawnAoEVisual` — спавн визуала AoE-эффекта
+- `ApplyStatusEffect` — добавление/обновление статус-эффекта на entity
+- `AddOrRefreshEffect` / `RemoveEffectAt` — управление inline-слотами StatusEffects
+- `CanLearnSpell` / `TryLearnSpell` — проверка/запись заклинания в SpellSlots
+
+### SpellCastRequest — однокадровый запрос каста
+
+Заклинания кастуются через компонент `SpellCastRequest` на entity игрока (не через очередь на GameContext):
+- **Продьюсер**: `SpellInputSystem` — проверяет MP/кулдаун, добавляет компонент
+- **Консьюмер**: `SpellCastSystem` — обрабатывает запрос, удаляет компонент в том же кадре
 
 ## Порядок тика систем
 
@@ -144,15 +162,20 @@ FloorLifecycleSystem  → обработка перехода этажа (есл
 InputSystem           → движение WASD (пропускает если не Playing)
 InventoryInputSystem  → Tab инвентарь, клики по слотам, использование предметов
 CombatInputSystem     → ЛКМ атака, Shift дэш (пропускает если не Playing)
+SpellInputSystem      → Z/X переключение spell slots, ПКМ каст, тик кулдауна
+SpellCastSystem       → обработка SpellCastRequest → спавн projectile/AoE/heal/teleport
 DashSystem            → дэш-движение, i-frames, afterimage, кулдауны
-PhysicsSystem         → движение + коллизии стен
+PhysicsSystem         → движение + коллизии стен + SlowDebuff масштабирование
+ProjectileSystem      → коллизия снарядов со стенами/врагами, AoE взрывы, Chain Lightning
 MeleeAttackSystem     → сектор атаки, DamageEvent-ы, screen shake
 AISystem              → state machine врагов, A* навигация, атака
+StatusEffectSystem    → Burn DoT → DamageEvents, Slow → SlowDebuff, снятие истёкших
 HealthSystem          → дренит DamageEvents, смерть, DamageFlash
+ManaSystem            → регенерация MP
 ItemDropSystem        → дроп предметов при смерти врагов
 ItemPickupSystem      → подбор предметов с земли
 ChestSystem           → взаимодействие с сундуками
-ItemUseSystem         → применение предметов (зелья, свитки)
+ItemUseSystem         → применение предметов (зелья, свитки, spell scrolls)
 DamageNumberSystem    → float-up чисел урона
 FloorTransitionSystem → детектит лестницу + ставит FloorTransitionRequested
 FovSystem             → туман войны
@@ -162,10 +185,12 @@ RenderSystem          → обёртка рендера (тикает всегд
   ├─ TileRenderSystem      (World) — тайлы + декор + FOV
   ├─ EntityRenderSystem    (World) — сущности + FOV + DamageFlash + afterimage
   ├─ CombatRenderSystem    (World) — дуга атаки, HP-бары врагов, числа урона
+  ├─ SpellRenderSystem     (World) — снаряды, AoE визуалы, индикаторы статус-эффектов
   ├─ ItemRenderSystem      (World) — предметы на земле, сундуки
   ├─ DecorationObjectRenderSystem (World) — декоративные объекты
   ├─ DebugRenderSystem     (World) — сетка + коллайдеры
-  ├─ HudRenderSystem       (Screen) — FPS, этаж, HP игрока, мини-карта
+  ├─ HudRenderSystem       (Screen) — FPS, этаж, HP/MP игрока, мини-карта
+  ├─ MagicHudRenderSystem  (Screen) — 3 spell slots UI, подсветка активного
   └─ InventoryRenderSystem (Screen) — UI инвентаря, экипировка, быстрые слоты
 
 --- Dispose phase (при выходе) ---
@@ -177,7 +202,8 @@ AssetProvider         → выгрузка всех текстур
 ```
 src/
 ├── Core/              — Game, GameConfig, GameContext, GameState, ServiceRegistration,
-│                        IAssetProvider, AssetProvider
+│   │                    IAssetProvider, AssetProvider
+│   └── Config/        — GameConfig.Combat.cs, GameConfig.Magic.cs (partial classes)
 ├── ECS/
 │   ├── Core/          — World, ComponentStore, IStartable, ITickable, IRenderTickable
 │   ├── Player/        — PlayerTag, InputSystem
@@ -196,14 +222,23 @@ src/
 │   │   ├── DamageEvent.cs, DamageCalculator.cs
 │   │   ├── EnemyTemplate.cs, EnemyRegistry.cs, EnemySpawner.cs
 │   │   └── AStarPathfinder.cs
-│   └── Items/
-│       ├── Components/ — Inventory, Equipment, QuickSlots, ItemStack,
-│       │                 ItemOnGround, Chest
-│       ├── Systems/    — InventoryInputSystem, ItemDropSystem, ItemPickupSystem,
-│       │                 ChestSystem, ItemUseSystem, ItemRenderSystem,
-│       │                 InventoryRenderSystem
-│       ├── ItemDatabase.cs, ItemDefinition.cs, ChestSpawner.cs
-│       └── ItemType.cs, ItemRarity.cs, ItemEffectType.cs
+│   ├── Items/
+│   │   ├── Components/ — Inventory, Equipment, QuickSlots, ItemStack,
+│   │   │                 ItemOnGround, Chest
+│   │   ├── Systems/    — InventoryInputSystem, ItemDropSystem, ItemPickupSystem,
+│   │   │                 ChestSystem, ItemUseSystem, ItemRenderSystem,
+│   │   │                 InventoryRenderSystem
+│   │   ├── ItemDatabase.cs, ItemDefinition.cs, ChestSpawner.cs
+│   │   └── ItemType.cs, ItemRarity.cs, ItemEffectType.cs
+│   └── Magic/
+│       ├── Components/ — Mana, SpellSlots, SpellCastRequest, Projectile,
+│       │                 AoEVisual, SlowDebuff, StatusEffects, StatusEffectSlot
+│       ├── Systems/    — ManaSystem, SpellInputSystem, SpellCastSystem,
+│       │                 ProjectileSystem, StatusEffectSystem,
+│       │                 SpellRenderSystem, MagicHudRenderSystem
+│       ├── SpellDatabase.cs, SpellDefinition.cs, MagicHelper.cs
+│       ├── SpellId.cs, SpellEffectType.cs
+│       └── SpellsJsonContext.cs
 ├── Dungeon/           — TileMap, Room, DungeonGenerator
 │   └── Generation/    — BspTree, RoomPlacer, CorridorCarver, DecorationPainter
 └── Program.cs         — точка входа
@@ -238,8 +273,12 @@ TDD — в `docs/dungeon_of_shadows_tdd.md`.
 
 - WASD / стрелки — движение
 - ЛКМ — атака мечом (в направлении мыши)
+- ПКМ — каст активного заклинания (в направлении мыши)
+- Z / X — переключение слотов заклинаний (предыдущий / следующий)
+- Колесо мыши — переключение слотов заклинаний
 - L / Shift — дэш (в направлении движения)
 - E / Space — спуск по лестнице
+- 1-4 — использование предмета из быстрых слотов
 - I / Tab — инвентарь
 - F3 — дебаг-режим (сетка + коллайдеры)
 - ESC — выход
