@@ -228,7 +228,7 @@ src/
 │   │   ├── Systems/    — InventoryInputSystem, ItemDropSystem, ItemPickupSystem,
 │   │   │                 ChestSystem, ItemUseSystem, ItemRenderSystem,
 │   │   │                 InventoryRenderSystem
-│   │   ├── ItemDatabase.cs, ItemDefinition.cs, ChestSpawner.cs
+│   │   ├── ItemDatabase.cs, ItemDefinition.cs, ItemAtlas.cs, ChestSpawner.cs
 │   │   └── ItemType.cs, ItemRarity.cs, ItemEffectType.cs
 │   └── Magic/
 │       ├── Components/ — Mana, SpellSlots, SpellCastRequest, Projectile,
@@ -244,8 +244,12 @@ src/
 └── Program.cs         — точка входа
 assets/
 ├── sprites/
+│   ├── characters/    — анимации героя и врагов
+│   ├── environment/   — тайлсеты, декор, сундуки, факелы
+│   └── items/         — спрайты предметов + items.png спрайтшит
 ├── sounds/
 └── data/
+tools/                 — утилиты (pack_items.py — упаковка спрайтшитов)
 docs/plans/            — планы по фазам разработки
 ```
 
@@ -268,6 +272,18 @@ docs/plans/            — планы по фазам разработки
 
 Подробные планы по каждой фазе — в `docs/plans/`. Сводка — в `docs/plans/overview.md`.
 TDD — в `docs/dungeon_of_shadows_tdd.md`.
+
+## Ключевые файлы
+
+- Порядок тика и регистрация систем: `src/Core/ServiceRegistration.cs`
+- ECS-ядро: `src/ECS/Core/World.cs`
+- Оркестрация рендера: `src/ECS/Rendering/RenderSystem.cs`
+- Конфигурация геймплея: `src/Core/GameConfig.cs` + `src/Core/Config/`
+- Генерация уровней: `src/ECS/Exploration/FloorLifecycleSystem.cs`
+- Атлас предметов: `src/ECS/Items/ItemAtlas.cs`
+- Атлас тайлов: `src/ECS/Rendering/TileAtlas.cs`
+- Планы по фазам: `docs/plans/`
+- Технический дизайн: `docs/dungeon_of_shadows_tdd.md`
 
 ## Горячие клавиши (в игре)
 

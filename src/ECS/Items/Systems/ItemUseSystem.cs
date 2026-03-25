@@ -90,6 +90,10 @@ public class ItemUseSystem : ITickable
 
         ApplyEffect(playerId, def);
 
+        // Очистить быстрый слот если предмет закончился в инвентаре
+        if (!HasInInventory(ref inv, definitionId))
+            ClearQuickSlot(ref quick, definitionId);
+
         if (def.Type == ItemType.Potion)
             quick.PotionCooldown = _config.PotionCooldownSeconds;
         if (def.Type is ItemType.Scroll or ItemType.SpellScroll)
@@ -179,6 +183,25 @@ public class ItemUseSystem : ITickable
                 ShowMessage("Cannot learn");
             }
         }
+    }
+
+    private static bool HasInInventory(ref Inventory inv, int definitionId)
+    {
+        for (int i = 0; i < inv.Capacity; i++)
+        {
+            ref var slot = ref inv.Slots[i];
+            if (slot.Occupied && slot.DefinitionId == definitionId)
+                return true;
+        }
+        return false;
+    }
+
+    private static void ClearQuickSlot(ref QuickSlots qs, int definitionId)
+    {
+        if (qs.Slot1DefinitionId == definitionId) qs.Slot1DefinitionId = -1;
+        if (qs.Slot2DefinitionId == definitionId) qs.Slot2DefinitionId = -1;
+        if (qs.Slot3DefinitionId == definitionId) qs.Slot3DefinitionId = -1;
+        if (qs.Slot4DefinitionId == definitionId) qs.Slot4DefinitionId = -1;
     }
 
     private void ShowMessage(string text)

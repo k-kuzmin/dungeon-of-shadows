@@ -27,8 +27,10 @@ public class ItemRenderSystem : IRenderTickable
     {
         var map = _ctx.Map;
         int ts = _config.ScaledTileSize;
+        float scale = _config.RenderScale;
+        var itemsTex = _assets.GetTexture("items");
 
-        // Предметы на земле — пока цветовые прямоугольники
+        // Предметы на земле — спрайты из items.png
         _world.QueryInto<ItemOnGround, Position>(_itemBuffer);
         for (int i = 0; i < _itemBuffer.Count; i++)
         {
@@ -45,14 +47,16 @@ public class ItemRenderSystem : IRenderTickable
                 continue;
 
             ref var stack = ref _world.Get<ItemStack>(id);
-            Color color = GetRarityColor(stack.Rarity);
-            int half = _config.GroundItemDrawHalfSize;
-            int size = _config.GroundItemDrawSize;
-            Raylib.DrawRectangle((int)pos.X - half, (int)pos.Y - half, size, size, color);
+            var src = ItemAtlas.GetSource(stack.DefinitionId, stack.Type, stack.Rarity);
+            float destW = ts * 0.5f;
+            float destH = ts * 0.5f;
+            float destX = pos.X + ts / 2f - destW / 2f;
+            float destY = pos.Y + ts / 2f - destH / 2f;
+            var dest = new Rectangle(destX, destY, destW, destH);
+            Raylib.DrawTexturePro(itemsTex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
         }
 
         // Сундуки — спрайтовые, анимация через Animation компонент
-        float scale = _config.RenderScale;
 
         _world.QueryInto<Chest, Position>(_chestBuffer);
         for (int i = 0; i < _chestBuffer.Count; i++)
@@ -81,16 +85,4 @@ public class ItemRenderSystem : IRenderTickable
         }
     }
 
-    private static Color GetRarityColor(ItemRarity rarity)
-    {
-        return rarity switch
-        {
-            ItemRarity.Common => new Color(230, 230, 230, 255),
-            ItemRarity.Uncommon => new Color(90, 220, 110, 255),
-            ItemRarity.Rare => new Color(90, 140, 240, 255),
-            ItemRarity.Epic => new Color(210, 80, 220, 255),
-            ItemRarity.Legendary => new Color(245, 200, 70, 255),
-            _ => Color.White
-        };
-    }
 }

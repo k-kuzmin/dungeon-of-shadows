@@ -36,7 +36,7 @@
 ## Conventions
 - For new systems (logic or render), use `services.AddInterfaces<MySystem>();` — it auto-detects all implemented interfaces.
 - Feature-oriented structure is required under `src/ECS/`:
-  - `Core`, `Player`, `Physics`, `Exploration`, `Rendering`, `Combat`
+  - `Core`, `Player`, `Physics`, `Exploration`, `Rendering`, `Combat`, `Items`, `Magic`
 - Match namespace to folder structure (for example, `DungeonOfShadows.ECS.Physics.Systems` for files in `src/ECS/Physics/`).
 - In hot paths, reuse query buffers (`List<int>` fields) and avoid per-tick allocations.
 - Prefer `World.QueryInto(...)` with reusable buffers over LINQ/materialized query allocations in tick methods.
@@ -49,3 +49,5 @@
 - Tick/render registration order: `src/Core/ServiceRegistration.cs`
 - ECS core patterns: `src/ECS/Core/World.cs`
 - Render phase orchestration: `src/ECS/Rendering/RenderSystem.cs`
+- Tile atlas (sprite mappings): `src/ECS/Rendering/TileAtlas.cs`
+- Item atlas (item sprite mappings): `src/ECS/Items/ItemAtlas.cs`

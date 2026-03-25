@@ -194,9 +194,15 @@ public class ItemPickupSystem : ITickable
         var world = _world;
         if (!world.Has<QuickSlots>(playerId)) return;
         if (!_db.TryGetDefinition(definitionId, out var def)) return;
-        if (def.Type is not (ItemType.Potion or ItemType.Scroll)) return;
+        if (def.Type is not (ItemType.Potion or ItemType.Scroll or ItemType.SpellScroll)) return;
 
         ref var qs = ref world.Get<QuickSlots>(playerId);
+
+        // Не дублируем — если уже привязан, выходим
+        if (qs.Slot1DefinitionId == definitionId || qs.Slot2DefinitionId == definitionId ||
+            qs.Slot3DefinitionId == definitionId || qs.Slot4DefinitionId == definitionId)
+            return;
+
         if (qs.Slot1DefinitionId < 0) { qs.Slot1DefinitionId = definitionId; return; }
         if (qs.Slot2DefinitionId < 0) { qs.Slot2DefinitionId = definitionId; return; }
         if (qs.Slot3DefinitionId < 0) { qs.Slot3DefinitionId = definitionId; return; }

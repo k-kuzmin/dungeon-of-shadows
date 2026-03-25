@@ -7,19 +7,23 @@ namespace DungeonOfShadows.ECS.Items.Systems;
 public class InventoryRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
+    private readonly IAssetProvider _assets;
     private readonly World _world;
     private readonly GameConfig _config;
     private readonly ItemDatabase _db;
     private readonly List<int> _playerBuffer = new();
+    private readonly List<int> _quickSlotsBuffer = new();
+    private Texture2D _itemsTex;
     private int _selectedInvSlot = -1;
     private bool _selectedEquip;
     private int _selectedEquipSlot = -1;
 
     public RenderPhase Phase => RenderPhase.Screen;
 
-    public InventoryRenderSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db)
+    public InventoryRenderSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db, IAssetProvider assets)
     {
         _ctx = ctx;
+        _assets = assets;
         _world = world;
         _config = config;
         _db = db;
@@ -27,6 +31,7 @@ public class InventoryRenderSystem : IRenderTickable
 
     public void Tick(float dt)
     {
+        _itemsTex = _assets.GetTexture("items");
         DrawQuickSlots();
 
         if (_ctx.UiMessageTimer > 0 && !string.IsNullOrWhiteSpace(_ctx.UiMessage))
@@ -88,12 +93,10 @@ public class InventoryRenderSystem : IRenderTickable
             ref var slot = ref inv.Slots[i];
             if (!slot.Occupied) continue;
 
-            string label = slot.DefinitionId.ToString();
-            if (_db.TryGetDefinition(slot.DefinitionId, out var def))
-                label = def.Name;
+            DrawItemIcon(slot, x, y, cellSize);
 
-            Raylib.DrawText(label, x + 4, y + 6, 10, Color.White);
-            Raylib.DrawText($"x{slot.Quantity}", x + 4, y + 36, 14, new Color(230, 230, 140, 255));
+            if (slot.Quantity > 1)
+                Raylib.DrawText($"x{slot.Quantity}", x + 4, y + cellSize - 16, 14, new Color(230, 230, 140, 255));
 
             var mouse = Raylib.GetMousePosition();
             if (PointInRect(mouse, x, y, cellSize, cellSize))
@@ -104,12 +107,12 @@ public class InventoryRenderSystem : IRenderTickable
         }
 
         int ex = panelX + panelW - 270;
-        int ey = panelY + 56;
+        int ey = panelY + _config.InventoryPanelPaddingY;
         DrawEquipSlot("Weapon", eq.Weapon, ex, ey, 0);
-        DrawEquipSlot("Armor", eq.Armor, ex, ey + 40, 1);
-        DrawEquipSlot("Amulet", eq.Amulet, ex, ey + 80, 2);
-        DrawEquipSlot("Ring1", eq.Ring1, ex, ey + 120, 3);
-        DrawEquipSlot("Ring2", eq.Ring2, ex, ey + 160, 4);
+        DrawEquipSlot("Armor", eq.Armor, ex, ey + 38, 1);
+        DrawEquipSlot("Amulet", eq.Amulet, ex, ey + 76, 2);
+        DrawEquipSlot("Ring1", eq.Ring1, ex, ey + 114, 3);
+        DrawEquipSlot("Ring2", eq.Ring2, ex, ey + 152, 4);
 
         DrawTooltip(tooltip, compare, panelX + 360, panelY + 56);
     }
@@ -117,14 +120,14 @@ public class InventoryRenderSystem : IRenderTickable
     private void DrawQuickSlots()
     {
         var world = _world;
-        world.QueryInto<PlayerTag, QuickSlots>(_playerBuffer);
-        if (_playerBuffer.Count == 0)
+        world.QueryInto<PlayerTag, QuickSlots>(_quickSlotsBuffer);
+        if (_quickSlotsBuffer.Count == 0)
             return;
 
-        int playerId = _playerBuffer[0];
+        int playerId = _quickSlotsBuffer[0];
         ref var quick = ref world.Get<QuickSlots>(playerId);
 
-        int baseY = _config.ScreenHeight - 52;
+        int baseY = _config.ScreenHeight - 62;
         int baseX = _config.ScreenWidth / 2 - 120;
 
         DrawQuickSlot(1, quick.Slot1DefinitionId, baseX + 0, baseY);
@@ -132,40 +135,54 @@ public class InventoryRenderSystem : IRenderTickable
         DrawQuickSlot(3, quick.Slot3DefinitionId, baseX + 120, baseY);
         DrawQuickSlot(4, quick.Slot4DefinitionId, baseX + 180, baseY);
 
-        string cd = $"P:{quick.PotionCooldown:0.0} S:{quick.ScrollCooldown:0.0}";
-        Raylib.DrawText(cd, baseX, baseY - 20, 14, Color.LightGray);
+        if (quick.PotionCooldown > 0 || quick.ScrollCooldown > 0)
+        {
+            string cd = $"P:{quick.PotionCooldown:0.0} S:{quick.ScrollCooldown:0.0}";
+            Raylib.DrawText(cd, baseX, baseY - 20, 14, Color.LightGray);
+        }
     }
 
     private void DrawQuickSlot(int key, int definitionId, int x, int y)
     {
-        Raylib.DrawRectangle(x, y, 52, 38, new Color(32, 32, 40, 220));
-        Raylib.DrawRectangleLines(x, y, 52, 38, new Color(160, 160, 170, 255));
-        Raylib.DrawText(key.ToString(), x + 4, y + 2, 14, Color.White);
+        Raylib.DrawRectangle(x, y, 52, 52, new Color(32, 32, 40, 220));
+        Raylib.DrawRectangleLines(x, y, 52, 52, new Color(160, 160, 170, 255));
+        Raylib.DrawText(key.ToString(), x + 2, y + 2, 12, Color.White);
 
         if (definitionId < 0)
             return;
 
-        string text = definitionId.ToString();
         if (_db.TryGetDefinition(definitionId, out var def))
-            text = def.Name.Length > 6 ? def.Name[..6] : def.Name;
-
-        Raylib.DrawText(text, x + 4, y + 18, 10, new Color(230, 230, 160, 255));
+        {
+            var src = ItemAtlas.GetSource(definitionId, def.Type, ItemRarity.Common);
+            int iconSize = 32;
+            int ix = x + (52 - iconSize) / 2;
+            int iy = y + (52 - iconSize) / 2 + 2;
+            var dest = new Rectangle(ix, iy, iconSize, iconSize);
+            Raylib.DrawTexturePro(_itemsTex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
+        }
     }
 
     private void DrawEquipSlot(string name, ItemStack slot, int x, int y)
     {
-        Raylib.DrawText(name, x, y, 16, Color.SkyBlue);
-        string value = slot.Occupied ? slot.DefinitionId.ToString() : "-";
-        if (slot.Occupied && _db.TryGetDefinition(slot.DefinitionId, out var def))
-            value = def.Name;
-
-        Raylib.DrawText(value, x + 100, y, 16, Color.White);
+        Raylib.DrawText(name, x, y + 4, 16, Color.SkyBlue);
+        if (slot.Occupied)
+        {
+            DrawItemIcon(slot, x + 80, y - 2, 28);
+            string value = slot.DefinitionId.ToString();
+            if (_db.TryGetDefinition(slot.DefinitionId, out var def))
+                value = def.Name;
+            Raylib.DrawText(value, x + 114, y + 4, 16, Color.White);
+        }
+        else
+        {
+            Raylib.DrawText("-", x + 100, y + 4, 16, Color.White);
+        }
     }
 
     private void DrawEquipSlot(string name, ItemStack slot, int x, int y, int index)
     {
         bool selected = _selectedEquip && _selectedEquipSlot == index;
-        Raylib.DrawRectangleLines(x - 4, y - 2, 240, 24, selected
+        Raylib.DrawRectangleLines(x - 4, y - 2, 260, 30, selected
             ? new Color(255, 220, 120, 255)
             : new Color(120, 120, 130, 180));
         DrawEquipSlot(name, slot, x, y);
@@ -200,8 +217,8 @@ public class InventoryRenderSystem : IRenderTickable
         int ey = _config.InventoryPanelY + _config.InventoryPanelPaddingY;
         for (int i = 0; i < 5; i++)
         {
-            int rowY = ey + i * 40;
-            if (!PointInRect(mouse, ex - 4, rowY - 2, 240, 24))
+            int rowY = ey + i * 38;
+            if (!PointInRect(mouse, ex - 4, rowY - 2, 260, 30))
                 continue;
 
             HandleEquipmentSlotClick(playerId, ref inv, ref eq, ref stats, ref hp, i);
@@ -439,6 +456,34 @@ public class InventoryRenderSystem : IRenderTickable
     {
         float pct = value * 100f;
         return (pct >= 0 ? "+" : "") + pct.ToString("0.0") + "%";
+    }
+
+    private void DrawItemIcon(ItemStack item, int x, int y, int size)
+    {
+        var src = ItemAtlas.GetSource(item.DefinitionId, item.Type, item.Rarity);
+
+        // Рамка редкости (под иконкой)
+        Color border = GetRarityColor(item.Rarity);
+        Raylib.DrawRectangleLines(x, y, size, size, border);
+
+        // Иконка с отступом 2px внутри рамки
+        int pad = 2;
+        int iconSize = size - pad * 2;
+        var dest = new Rectangle(x + pad, y + pad, iconSize, iconSize);
+        Raylib.DrawTexturePro(_itemsTex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
+    }
+
+    private static Color GetRarityColor(ItemRarity rarity)
+    {
+        return rarity switch
+        {
+            ItemRarity.Common => new Color(160, 160, 170, 255),
+            ItemRarity.Uncommon => new Color(90, 220, 110, 255),
+            ItemRarity.Rare => new Color(90, 140, 240, 255),
+            ItemRarity.Epic => new Color(210, 80, 220, 255),
+            ItemRarity.Legendary => new Color(245, 200, 70, 255),
+            _ => Color.White
+        };
     }
 
     private static bool PointInRect(System.Numerics.Vector2 p, int x, int y, int w, int h)

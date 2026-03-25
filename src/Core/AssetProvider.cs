@@ -23,6 +23,9 @@ public sealed class AssetProvider : IAssetProvider, IStartable
         ("cracks_floor", "assets/sprites/environment/decorative_cracks_floor.png"),
         ("cracks_walls", "assets/sprites/environment/decorative_cracks_walls.png"),
 
+        // Items
+        ("items",        "assets/sprites/items/items.png"),
+
         // Hero
         ("hero_idle",       "assets/sprites/characters/hero_lvl2/Swordsman_lvl2_Idle_with_shadow.png"),
         ("hero_run",        "assets/sprites/characters/hero_lvl2/Swordsman_lvl2_Run_with_shadow.png"),
