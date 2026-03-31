@@ -1,6 +1,9 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
 using DungeonOfShadows.ECS.Combat;
+using DungeonOfShadows.ECS.Magic;
+using DungeonOfShadows.ECS.Magic.Components;
+using DungeonOfShadows.UI;
 
 namespace DungeonOfShadows.ECS.Items.Systems;
 
@@ -11,6 +14,9 @@ public class InventoryRenderSystem : IRenderTickable
     private readonly World _world;
     private readonly GameConfig _config;
     private readonly ItemDatabase _db;
+    private readonly UiTheme _theme;
+    private readonly TextMeasureCache _textCache;
+    private readonly UiContext _uiCtx;
     private readonly List<int> _playerBuffer = new();
     private readonly List<int> _quickSlotsBuffer = new();
     private Texture2D _itemsTex;
@@ -18,15 +24,46 @@ public class InventoryRenderSystem : IRenderTickable
     private bool _selectedEquip;
     private int _selectedEquipSlot = -1;
 
+    // Кеш тултипа: обновляем только при смене hover слота
+    private int _hoveredSlot = -1;
+    private string _cachedTooltip = string.Empty;
+    private string _cachedCompare = string.Empty;
+
+    // Кеш строк для quick slots и inventory (избегаем аллокаций на hot path)
+    private static readonly string[] QuickSlotLabels = ["1", "2", "3", "4"];
+    private readonly string[] _cachedQuantityStrings = new string[20];
+    private readonly int[] _cachedQuantityValues = new int[20];
+    private string _cachedCooldownText = string.Empty;
+    private float _cachedPotionCd = -1f;
+    private float _cachedScrollCd = -1f;
+
+    // Кеш строк для панели статов
+    private int _statCacheAtk = -1, _statCacheDef = -1, _statCacheInt = -1;
+    private int _statCacheHp = -1, _statCacheMaxHp = -1;
+    private int _statCacheMp = -1, _statCacheMaxMp = -1;
+    private float _statCacheSpd = -1f, _statCacheCrit = -1f;
+    private string _statStrAtk = "", _statStrDef = "", _statStrSpd = "";
+    private string _statStrCrit = "", _statStrInt = "";
+    private string _statStrHp = "", _statStrMp = "";
+
+    // Кеш строк для статус-эффектов (макс 4 слота)
+    private readonly string[] _cachedEffectLines = new string[4];
+    private readonly SpellEffectType[] _cachedEffectTypes = new SpellEffectType[4];
+    private readonly int[] _cachedEffectSecs = new int[4];
+
     public RenderPhase Phase => RenderPhase.Screen;
 
-    public InventoryRenderSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db, IAssetProvider assets)
+    public InventoryRenderSystem(GameContext ctx, World world, GameConfig config,
+        ItemDatabase db, IAssetProvider assets, UiTheme theme, TextMeasureCache textCache, UiContext uiCtx)
     {
         _ctx = ctx;
         _assets = assets;
         _world = world;
         _config = config;
         _db = db;
+        _theme = theme;
+        _textCache = textCache;
+        _uiCtx = uiCtx;
     }
 
     public void Tick(float dt)
@@ -36,9 +73,9 @@ public class InventoryRenderSystem : IRenderTickable
 
         if (_ctx.UiMessageTimer > 0 && !string.IsNullOrWhiteSpace(_ctx.UiMessage))
         {
-            int textW = Raylib.MeasureText(_ctx.UiMessage, 22);
+            int textW = _textCache.Measure(_ctx.UiMessage, _config.UiMessageFontSize);
             int x = _config.ScreenWidth / 2 - textW / 2;
-            Raylib.DrawText(_ctx.UiMessage, x, 16, 22, Color.Gold);
+            Raylib.DrawText(_ctx.UiMessage, x, 16, _config.UiMessageFontSize, Color.Gold);
         }
 
         if (!_ctx.ShowInventory)
@@ -60,12 +97,12 @@ public class InventoryRenderSystem : IRenderTickable
 
         int panelX = _config.InventoryPanelX;
         int panelY = _config.InventoryPanelY;
-        int panelW = _config.ScreenWidth - 240;
-        int panelH = _config.ScreenHeight - 180;
+        int panelW = _config.ScreenWidth - _config.InventoryPanelWidthOffset;
+        int panelH = _config.ScreenHeight - _config.InventoryPanelHeightOffset;
 
-        Raylib.DrawRectangle(panelX, panelY, panelW, panelH, new Color(20, 20, 24, 235));
-        Raylib.DrawRectangleLines(panelX, panelY, panelW, panelH, new Color(180, 180, 180, 255));
-        Raylib.DrawText("Inventory (I to close)", panelX + 20, panelY + 14, 24, Color.White);
+        var panelRect = new UiRect(panelX, panelY, panelW, panelH);
+        UiDraw.Panel(panelRect, _theme.InvPanelBg, _theme.InvPanelBorder);
+        Raylib.DrawText("Inventory (I to close)", panelX + 20, panelY + 14, 24, _theme.TextWhite);
 
         int cols = 5;
         int cellSize = _config.InventoryCellSize;
@@ -73,9 +110,10 @@ public class InventoryRenderSystem : IRenderTickable
         int startX = panelX + _config.InventoryPanelPaddingX;
         int startY = panelY + _config.InventoryPanelPaddingY;
 
-        string tooltip = string.Empty;
-        string compare = string.Empty;
         HandleInventoryInput(playerId, ref inv, ref eq, ref stats, ref hp, startX, startY, cols, cellSize, gap);
+
+        int newHovered = -1;
+        var mouse = Raylib.GetMousePosition();
 
         for (int i = 0; i < inv.Capacity; i++)
         {
@@ -84,28 +122,31 @@ public class InventoryRenderSystem : IRenderTickable
             int x = startX + cx * (cellSize + gap);
             int y = startY + cy * (cellSize + gap);
 
+            var cellRect = new UiRect(x, y, cellSize, cellSize);
             bool isSelected = i == _selectedInvSlot && !_selectedEquip;
-            Raylib.DrawRectangle(x, y, cellSize, cellSize, new Color(45, 45, 54, 255));
-            Raylib.DrawRectangleLines(x, y, cellSize, cellSize, isSelected
-                ? new Color(255, 220, 120, 255)
-                : new Color(140, 140, 150, 255));
+            UiDraw.Slot(cellRect, _theme.InvCellBg, _theme.InvCellBorder, isSelected, _theme.InvSelected);
 
             ref var slot = ref inv.Slots[i];
             if (!slot.Occupied) continue;
 
-            DrawItemIcon(slot, x, y, cellSize);
+            DrawItemIcon(slot, cellRect);
 
             if (slot.Quantity > 1)
-                Raylib.DrawText($"x{slot.Quantity}", x + 4, y + cellSize - 16, 14, new Color(230, 230, 140, 255));
-
-            var mouse = Raylib.GetMousePosition();
-            if (PointInRect(mouse, x, y, cellSize, cellSize))
             {
-                tooltip = BuildItemTooltip(slot);
-                compare = BuildCompareText(ref eq, slot);
+                if (i < _cachedQuantityStrings.Length && _cachedQuantityValues[i] != slot.Quantity)
+                {
+                    _cachedQuantityValues[i] = slot.Quantity;
+                    _cachedQuantityStrings[i] = "x" + slot.Quantity;
+                }
+                string qtyStr = i < _cachedQuantityStrings.Length ? _cachedQuantityStrings[i] : "x" + slot.Quantity;
+                Raylib.DrawText(qtyStr, x + 4, y + cellSize - 16, 14, _theme.InvQuantity);
             }
+
+            if (cellRect.Contains(mouse))
+                newHovered = i;
         }
 
+        // Equipment slots
         int ex = panelX + panelW - 270;
         int ey = panelY + _config.InventoryPanelPaddingY;
         DrawEquipSlot("Weapon", eq.Weapon, ex, ey, 0);
@@ -114,7 +155,30 @@ public class InventoryRenderSystem : IRenderTickable
         DrawEquipSlot("Ring1", eq.Ring1, ex, ey + 114, 3);
         DrawEquipSlot("Ring2", eq.Ring2, ex, ey + 152, 4);
 
-        DrawTooltip(tooltip, compare, panelX + 360, panelY + 56);
+        // Статы героя — под equipment slots
+        DrawPlayerStats(playerId, ref stats, ref hp, ex, ey + 200);
+
+        // Tooltip — обновляем кеш только при смене hover
+        if (newHovered != _hoveredSlot)
+        {
+            _hoveredSlot = newHovered;
+            if (newHovered >= 0 && inv.Slots[newHovered].Occupied)
+            {
+                _cachedTooltip = BuildItemTooltip(inv.Slots[newHovered]);
+                _cachedCompare = BuildCompareText(ref eq, inv.Slots[newHovered]);
+            }
+            else
+            {
+                _cachedTooltip = string.Empty;
+                _cachedCompare = string.Empty;
+            }
+        }
+
+        DrawTooltip(_cachedTooltip, _cachedCompare, panelX + 360, panelY + 56);
+
+        // Модальное окно поверх всего
+        if (_uiCtx.HasModal)
+            UiModal.Draw(_uiCtx.TopModal, _config, _theme, _textCache);
     }
 
     private void DrawQuickSlots()
@@ -127,26 +191,39 @@ public class InventoryRenderSystem : IRenderTickable
         int playerId = _quickSlotsBuffer[0];
         ref var quick = ref world.Get<QuickSlots>(playerId);
 
-        int baseY = _config.ScreenHeight - 62;
-        int baseX = _config.ScreenWidth / 2 - 120;
+        int slotSize = _config.QuickSlotSize;
+        int gap = _config.QuickSlotGap;
+        int totalW = slotSize * 4 + gap * 3;
+        int baseX = _config.ScreenWidth / 2 - totalW / 2;
+        int baseY = _config.ScreenHeight - _config.QuickSlotBottomOffset;
 
-        DrawQuickSlot(1, quick.Slot1DefinitionId, baseX + 0, baseY);
-        DrawQuickSlot(2, quick.Slot2DefinitionId, baseX + 60, baseY);
-        DrawQuickSlot(3, quick.Slot3DefinitionId, baseX + 120, baseY);
-        DrawQuickSlot(4, quick.Slot4DefinitionId, baseX + 180, baseY);
+        var layout = UiLayout.Row(baseX, baseY, gap);
+
+        DrawQuickSlot(ref layout, 1, quick.Slot1DefinitionId, slotSize);
+        DrawQuickSlot(ref layout, 2, quick.Slot2DefinitionId, slotSize);
+        DrawQuickSlot(ref layout, 3, quick.Slot3DefinitionId, slotSize);
+        DrawQuickSlot(ref layout, 4, quick.Slot4DefinitionId, slotSize);
 
         if (quick.PotionCooldown > 0 || quick.ScrollCooldown > 0)
         {
-            string cd = $"P:{quick.PotionCooldown:0.0} S:{quick.ScrollCooldown:0.0}";
-            Raylib.DrawText(cd, baseX, baseY - 20, 14, Color.LightGray);
+            // Кеш строки кулдауна — обновляем только при изменении (с точностью 0.1)
+            float pRound = MathF.Round(quick.PotionCooldown, 1);
+            float sRound = MathF.Round(quick.ScrollCooldown, 1);
+            if (pRound != _cachedPotionCd || sRound != _cachedScrollCd)
+            {
+                _cachedPotionCd = pRound;
+                _cachedScrollCd = sRound;
+                _cachedCooldownText = "P:" + pRound.ToString("0.0") + " S:" + sRound.ToString("0.0");
+            }
+            Raylib.DrawText(_cachedCooldownText, baseX, baseY - 20, 14, Color.LightGray);
         }
     }
 
-    private void DrawQuickSlot(int key, int definitionId, int x, int y)
+    private void DrawQuickSlot(ref UiLayout layout, int key, int definitionId, int slotSize)
     {
-        Raylib.DrawRectangle(x, y, 52, 52, new Color(32, 32, 40, 220));
-        Raylib.DrawRectangleLines(x, y, 52, 52, new Color(160, 160, 170, 255));
-        Raylib.DrawText(key.ToString(), x + 2, y + 2, 12, Color.White);
+        var rect = layout.TakeSquare(slotSize);
+        UiDraw.Slot(rect, _theme.QuickSlotBg, _theme.QuickSlotBorder, false, _theme.InvSelected);
+        Raylib.DrawText(QuickSlotLabels[key - 1], rect.X + 2, rect.Y + 2, _config.QuickSlotKeyFontSize, _theme.TextWhite);
 
         if (definitionId < 0)
             return;
@@ -154,44 +231,131 @@ public class InventoryRenderSystem : IRenderTickable
         if (_db.TryGetDefinition(definitionId, out var def))
         {
             var src = ItemAtlas.GetSource(definitionId, def.Type, ItemRarity.Common);
-            int iconSize = 32;
-            int ix = x + (52 - iconSize) / 2;
-            int iy = y + (52 - iconSize) / 2 + 2;
+            int iconSize = _config.QuickSlotIconSize;
+            int ix = rect.X + (slotSize - iconSize) / 2;
+            int iy = rect.Y + (slotSize - iconSize) / 2 + 2;
             var dest = new Rectangle(ix, iy, iconSize, iconSize);
             Raylib.DrawTexturePro(_itemsTex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
-        }
-    }
-
-    private void DrawEquipSlot(string name, ItemStack slot, int x, int y)
-    {
-        Raylib.DrawText(name, x, y + 4, 16, Color.SkyBlue);
-        if (slot.Occupied)
-        {
-            DrawItemIcon(slot, x + 80, y - 2, 28);
-            string value = slot.DefinitionId.ToString();
-            if (_db.TryGetDefinition(slot.DefinitionId, out var def))
-                value = def.Name;
-            Raylib.DrawText(value, x + 114, y + 4, 16, Color.White);
-        }
-        else
-        {
-            Raylib.DrawText("-", x + 100, y + 4, 16, Color.White);
         }
     }
 
     private void DrawEquipSlot(string name, ItemStack slot, int x, int y, int index)
     {
         bool selected = _selectedEquip && _selectedEquipSlot == index;
-        Raylib.DrawRectangleLines(x - 4, y - 2, 260, 30, selected
-            ? new Color(255, 220, 120, 255)
-            : new Color(120, 120, 130, 180));
-        DrawEquipSlot(name, slot, x, y);
+        var borderRect = new UiRect(x - 4, y - 2, 260, 30);
+        Raylib.DrawRectangleLines(borderRect.X, borderRect.Y, borderRect.W, borderRect.H,
+            selected ? _theme.InvSelected : _theme.EquipBorder);
+
+        Raylib.DrawText(name, x, y + 4, 16, Color.SkyBlue);
+        if (slot.Occupied)
+        {
+            var iconRect = new UiRect(x + 80, y - 2, 28, 28);
+            DrawItemIcon(slot, iconRect);
+            string value = slot.DefinitionId.ToString();
+            if (_db.TryGetDefinition(slot.DefinitionId, out var def))
+                value = def.Name;
+            Raylib.DrawText(value, x + 114, y + 4, 16, _theme.TextWhite);
+        }
+        else
+        {
+            Raylib.DrawText("-", x + 100, y + 4, 16, _theme.TextWhite);
+        }
+    }
+
+    private void DrawPlayerStats(int playerId, ref Stats stats, ref Health hp, int x, int y)
+    {
+        // Заголовок
+        Raylib.DrawText("Stats", x, y, 16, _theme.SlotActive);
+
+        // Кеш строк — обновляем только при смене значений
+        if (_statCacheAtk != stats.ATK)
+        { _statCacheAtk = stats.ATK; _statStrAtk = "ATK  " + stats.ATK; }
+
+        if (_statCacheDef != stats.DEF)
+        { _statCacheDef = stats.DEF; _statStrDef = "DEF  " + stats.DEF; }
+
+        float spdRound = MathF.Round(stats.SPD, 1);
+        if (_statCacheSpd != spdRound)
+        { _statCacheSpd = spdRound; _statStrSpd = "SPD  " + spdRound.ToString("0.0"); }
+
+        float critPct = MathF.Round(stats.Crit * 100f, 1);
+        if (_statCacheCrit != critPct)
+        { _statCacheCrit = critPct; _statStrCrit = "CRIT " + critPct.ToString("0.0") + "%"; }
+
+        if (_statCacheInt != stats.INT)
+        { _statCacheInt = stats.INT; _statStrInt = "INT  " + stats.INT; }
+
+        if (_statCacheHp != hp.HP || _statCacheMaxHp != hp.MaxHP)
+        { _statCacheHp = hp.HP; _statCacheMaxHp = hp.MaxHP; _statStrHp = "HP   " + hp.HP + "/" + hp.MaxHP; }
+
+        bool hasMana = _world.Has<Mana>(playerId);
+        if (hasMana)
+        {
+            ref var mana = ref _world.Get<Mana>(playerId);
+            if (_statCacheMp != mana.MP || _statCacheMaxMp != mana.MaxMP)
+            { _statCacheMp = mana.MP; _statCacheMaxMp = mana.MaxMP; _statStrMp = "MP   " + mana.MP + "/" + mana.MaxMP; }
+        }
+
+        // Отрисовка
+        int lineH = 18;
+        int sy = y + 22;
+        var layout = UiLayout.Column(x, sy, 2);
+
+        DrawStatLine(ref layout, _statStrHp, _theme.HpBarFull, lineH);
+        if (hasMana)
+            DrawStatLine(ref layout, _statStrMp, _theme.MpBarFill, lineH);
+        DrawStatLine(ref layout, _statStrAtk, new Color(240, 120, 80, 255), lineH);
+        DrawStatLine(ref layout, _statStrDef, new Color(100, 160, 240, 255), lineH);
+        DrawStatLine(ref layout, _statStrSpd, new Color(120, 220, 160, 255), lineH);
+        DrawStatLine(ref layout, _statStrCrit, new Color(240, 200, 80, 255), lineH);
+        DrawStatLine(ref layout, _statStrInt, new Color(180, 120, 240, 255), lineH);
+
+        // Активные статус-эффекты
+        if (_world.Has<StatusEffects>(playerId))
+        {
+            ref var effects = ref _world.Get<StatusEffects>(playerId);
+            if (effects.ActiveCount > 0)
+            {
+                layout.Skip(4);
+                var effectLabelRect = layout.Take(200, lineH);
+                Raylib.DrawText("Effects", effectLabelRect.X, effectLabelRect.Y, 14, _theme.SlotActive);
+
+                for (int i = 0; i < effects.ActiveCount; i++)
+                {
+                    var slot = effects.GetSlot(i);
+                    int secs = (int)MathF.Ceiling(slot.Duration);
+                    if (_cachedEffectTypes[i] != slot.Type || _cachedEffectSecs[i] != secs)
+                    {
+                        _cachedEffectTypes[i] = slot.Type;
+                        _cachedEffectSecs[i] = secs;
+                        _cachedEffectLines[i] = slot.Type.ToString() + "  " + secs + "s";
+                    }
+                    var lineRect = layout.Take(200, lineH);
+                    Color effectColor = slot.Type switch
+                    {
+                        SpellEffectType.Burn => new Color(255, 100, 20, 255),
+                        SpellEffectType.Slow => new Color(100, 180, 255, 255),
+                        _ => _theme.TextWhite
+                    };
+                    Raylib.DrawText(_cachedEffectLines[i], lineRect.X + 8, lineRect.Y, 14, effectColor);
+                }
+            }
+        }
+    }
+
+    private static void DrawStatLine(ref UiLayout layout, string text, Color color, int lineH)
+    {
+        var rect = layout.Take(200, lineH);
+        Raylib.DrawText(text, rect.X + 8, rect.Y, 14, color);
     }
 
     private void HandleInventoryInput(int playerId, ref Inventory inv, ref Equipment eq,
         ref Stats stats, ref Health hp,
         int startX, int startY, int cols, int cellSize, int gap)
     {
+        if (_uiCtx.InputConsumed || _uiCtx.HasModal)
+            return;
+
         if (!Raylib.IsMouseButtonPressed(MouseButton.Left))
             return;
 
@@ -205,22 +369,26 @@ public class InventoryRenderSystem : IRenderTickable
             int x = startX + cx * (cellSize + gap);
             int y = startY + cy * (cellSize + gap);
 
-            if (!PointInRect(mouse, x, y, cellSize, cellSize))
+            var cellRect = new UiRect(x, y, cellSize, cellSize);
+            if (!cellRect.Contains(mouse))
                 continue;
 
+            _uiCtx.InputConsumed = true;
             HandleInventorySlotClick(ref inv, ref eq, ref stats, ref hp, i);
             return;
         }
 
         // Equipment click area
-        int ex = _config.InventoryPanelX + (_config.ScreenWidth - 240) - 270;
+        int ex = _config.InventoryPanelX + (_config.ScreenWidth - _config.InventoryPanelWidthOffset) - 270;
         int ey = _config.InventoryPanelY + _config.InventoryPanelPaddingY;
         for (int i = 0; i < 5; i++)
         {
             int rowY = ey + i * 38;
-            if (!PointInRect(mouse, ex - 4, rowY - 2, 260, 30))
+            var equipRect = new UiRect(ex - 4, rowY - 2, 260, 30);
+            if (!equipRect.Contains(mouse))
                 continue;
 
+            _uiCtx.InputConsumed = true;
             HandleEquipmentSlotClick(playerId, ref inv, ref eq, ref stats, ref hp, i);
             return;
         }
@@ -431,14 +599,14 @@ public class InventoryRenderSystem : IRenderTickable
         if (string.IsNullOrEmpty(tooltip))
             return;
 
-        int w = 300;
-        int h = string.IsNullOrEmpty(compare) ? 72 : 100;
-        Raylib.DrawRectangle(x, y, w, h, new Color(10, 10, 15, 225));
-        Raylib.DrawRectangleLines(x, y, w, h, new Color(190, 190, 210, 255));
+        int w = _config.TooltipWidth;
+        int h = string.IsNullOrEmpty(compare) ? _config.TooltipBaseHeight : _config.TooltipCompareHeight;
+        var rect = new UiRect(x, y, w, h);
+        UiDraw.Tooltip(rect, _theme.TooltipBg, _theme.TooltipBorder);
 
-        Raylib.DrawText(tooltip, x + 10, y + 8, 16, Color.White);
+        Raylib.DrawText(tooltip, x + _config.TooltipPadding, y + 8, _config.TooltipFontSize, _theme.TextWhite);
         if (!string.IsNullOrEmpty(compare))
-            Raylib.DrawText(compare, x + 10, y + 62, 14, new Color(220, 210, 120, 255));
+            Raylib.DrawText(compare, x + _config.TooltipPadding, y + 62, _config.TooltipCompareFontSize, _theme.TooltipCompare);
     }
 
     private void ShowMessage(string text)
@@ -458,37 +626,12 @@ public class InventoryRenderSystem : IRenderTickable
         return (pct >= 0 ? "+" : "") + pct.ToString("0.0") + "%";
     }
 
-    private void DrawItemIcon(ItemStack item, int x, int y, int size)
+    private void DrawItemIcon(ItemStack item, UiRect rect)
     {
         var src = ItemAtlas.GetSource(item.DefinitionId, item.Type, item.Rarity);
-
-        // Рамка редкости (под иконкой)
-        Color border = GetRarityColor(item.Rarity);
-        Raylib.DrawRectangleLines(x, y, size, size, border);
-
-        // Иконка с отступом 2px внутри рамки
-        int pad = 2;
-        int iconSize = size - pad * 2;
-        var dest = new Rectangle(x + pad, y + pad, iconSize, iconSize);
-        Raylib.DrawTexturePro(_itemsTex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
-    }
-
-    private static Color GetRarityColor(ItemRarity rarity)
-    {
-        return rarity switch
-        {
-            ItemRarity.Common => new Color(160, 160, 170, 255),
-            ItemRarity.Uncommon => new Color(90, 220, 110, 255),
-            ItemRarity.Rare => new Color(90, 140, 240, 255),
-            ItemRarity.Epic => new Color(210, 80, 220, 255),
-            ItemRarity.Legendary => new Color(245, 200, 70, 255),
-            _ => Color.White
-        };
-    }
-
-    private static bool PointInRect(System.Numerics.Vector2 p, int x, int y, int w, int h)
-    {
-        return p.X >= x && p.X <= x + w && p.Y >= y && p.Y <= y + h;
+        Color border = UiTheme.RarityColor(item.Rarity);
+        Raylib.DrawRectangleLines(rect.X, rect.Y, rect.W, rect.H, border);
+        UiDraw.ItemIcon(rect, _itemsTex, src, Color.White);
     }
 
     private static ref ItemStack GetEquipmentSlot(ref Equipment eq, int equipSlotIndex)

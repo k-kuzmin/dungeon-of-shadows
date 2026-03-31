@@ -1,6 +1,7 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
 using DungeonOfShadows.ECS.Magic.Components;
+using DungeonOfShadows.UI;
 
 namespace DungeonOfShadows.ECS.Magic.Systems;
 
@@ -14,14 +15,16 @@ public class SpellInputSystem : ITickable
     private readonly World _world;
     private readonly GameConfig _config;
     private readonly SpellDatabase _spellDb;
+    private readonly UiContext _uiCtx;
     private readonly List<int> _buffer = new();
 
-    public SpellInputSystem(GameContext ctx, World world, GameConfig config, SpellDatabase spellDb)
+    public SpellInputSystem(GameContext ctx, World world, GameConfig config, SpellDatabase spellDb, UiContext uiCtx)
     {
         _ctx = ctx;
         _world = world;
         _config = config;
         _spellDb = spellDb;
+        _uiCtx = uiCtx;
     }
 
     public void Tick(float dt)
@@ -39,7 +42,7 @@ public class SpellInputSystem : ITickable
         if (slots.CastCooldown > 0f)
             slots.CastCooldown = MathF.Max(0f, slots.CastCooldown - dt);
 
-        if (_ctx.ShowInventory) return;
+        if (_ctx.ShowInventory || _uiCtx.InputConsumed) return;
 
         // Z — предыдущий слот
         if (Raylib.IsKeyPressed(KeyboardKey.Z))
@@ -56,8 +59,8 @@ public class SpellInputSystem : ITickable
         else if (wheel < 0)
             slots.ActiveSlotIndex = (slots.ActiveSlotIndex + 1) % 3;
 
-        // ПКМ — каст активного заклинания
-        if (Raylib.IsMouseButtonPressed(MouseButton.Right))
+        // ПКМ — каст активного заклинания (пропускаем если UI забрал input)
+        if (!_uiCtx.InputConsumed && Raylib.IsMouseButtonPressed(MouseButton.Right))
         {
             if (world.Has<SpellCastRequest>(playerId)) return;
             if (slots.CastCooldown > 0f) return;

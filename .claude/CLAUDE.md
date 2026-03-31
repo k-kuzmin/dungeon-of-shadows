@@ -150,6 +150,31 @@ public interface IAssetProvider : IDisposable
 - **Продьюсер**: `SpellInputSystem` — проверяет MP/кулдаун, добавляет компонент
 - **Консьюмер**: `SpellCastSystem` — обрабатывает запрос, удаляет компонент в том же кадре
 
+### UI Framework
+
+Мини-фреймворк поверх Raylib для игрового интерфейса. Все файлы в `src/UI/`.
+
+**Ключевые компоненты:**
+- `UiRect` — readonly struct, screen-space bounding box для layout + hit-test + render
+- `UiLayout` — ref struct (stack-only, zero alloc), flex-подобный layout cursor (Row/Column + gap)
+- `UiDraw` — статические методы отрисовки (Panel, ProgressBar, Slot, Label, Tooltip, ItemIcon)
+- `UiTheme` — singleton, единый источник всех цветов (`RarityColor`, `SpellColor`, `HpInterpolated`)
+- `TextMeasureCache` — кэш `Raylib.MeasureText` по `(string, fontSize)`, устраняет повторные native-вызовы
+- `UiContext` — `InputConsumed` флаг + modal stack (`PushModal`/`PopModal`)
+- `UiInputSystem` — `ITickable`, сбрасывает per-frame state, обрабатывает modal Esc/Enter
+- `UiModal` — статический хелпер отрисовки модальных окон
+
+**Input routing:**
+- `UiInputSystem` тикает ПЕРЕД всеми gameplay input системами
+- `UiContext.InputConsumed` — ставится UI при кликах, проверяется `CombatInputSystem` и `SpellInputSystem`
+- Modal → блокирует весь input через `InputConsumed = true`
+
+**Конвенции UI кода:**
+- Все UI magic numbers — в `GameConfig.Ui.cs`
+- Строки на hot path кэшируются, пересоздаются только при изменении значений
+- Нет LINQ, нет string concat на hot path, нет `Enum.ToString()` каждый кадр
+- `ref struct UiLayout` не может быть полем класса — передаётся через `ref` в helper-методы
+
 ## Порядок тика систем
 
 ```
@@ -159,10 +184,11 @@ FloorLifecycleSystem  → генерация 1-го этажа, спавн иг�
 
 --- Tick phase (каждый кадр) ---
 FloorLifecycleSystem  → обработка перехода этажа (если FloorTransitionRequested)
+UiInputSystem         → ClearFrame, modal Esc/Enter, InputConsumed
 InputSystem           → движение WASD (пропускает если не Playing)
 InventoryInputSystem  → Tab инвентарь, клики по слотам, использование предметов
-CombatInputSystem     → ЛКМ атака, Shift дэш (пропускает если не Playing)
-SpellInputSystem      → Z/X переключение spell slots, ПКМ каст, тик кулдауна
+CombatInputSystem     → ЛКМ атака, Shift дэш (пропускает если InputConsumed/не Playing)
+SpellInputSystem      → Z/X переключение spell slots, ПКМ каст (пропускает если InputConsumed), тик кулдауна
 SpellCastSystem       → обработка SpellCastRequest → спавн projectile/AoE/heal/teleport
 DashSystem            → дэш-движение, i-frames, afterimage, кулдауны
 PhysicsSystem         → движение + коллизии стен + SlowDebuff масштабирование
@@ -189,9 +215,10 @@ RenderSystem          → обёртка рендера (тикает всегд
   ├─ ItemRenderSystem      (World) — предметы на земле, сундуки
   ├─ DecorationObjectRenderSystem (World) — декоративные объекты
   ├─ DebugRenderSystem     (World) — сетка + коллайдеры
-  ├─ HudRenderSystem       (Screen) — FPS, этаж, HP/MP игрока, мини-карта
+  ├─ HudRenderSystem       (Screen) — FPS, этаж, HP/MP бары, мини-карта
   ├─ MagicHudRenderSystem  (Screen) — 3 spell slots UI, подсветка активного
-  └─ InventoryRenderSystem (Screen) — UI инвентаря, экипировка, быстрые слоты
+  ├─ InventoryRenderSystem (Screen) — UI инвентаря, экипировка, быстрые слоты, статы героя
+  └─ FullscreenMapRenderSystem (Screen) — полноэкранная карта (поверх всех HUD)
 
 --- Dispose phase (при выходе) ---
 AssetProvider         → выгрузка всех текстур
@@ -203,14 +230,15 @@ AssetProvider         → выгрузка всех текстур
 src/
 ├── Core/              — Game, GameConfig, GameContext, GameState, ServiceRegistration,
 │   │                    IAssetProvider, AssetProvider
-│   └── Config/        — GameConfig.Combat.cs, GameConfig.Magic.cs (partial classes)
+│   └── Config/        — GameConfig.Combat.cs, GameConfig.Magic.cs, GameConfig.Ui.cs (partial classes)
 ├── ECS/
 │   ├── Core/          — World, ComponentStore, IStartable, ITickable, IRenderTickable
 │   ├── Player/        — PlayerTag, InputSystem
 │   ├── Physics/       — Position, Velocity, Collider, PhysicsSystem
 │   ├── Rendering/     — Sprite, RenderSystem, CameraSystem,
 │   │                    TileRenderSystem, EntityRenderSystem,
-│   │                    DebugRenderSystem, HudRenderSystem
+│   │                    DebugRenderSystem, HudRenderSystem,
+│   │                    FullscreenMapRenderSystem
 │   ├── Exploration/   — FovSystem, FloorTransitionSystem, FloorLifecycleSystem
 │   ├── Combat/
 │   │   ├── Components/ — Health, Stats, EnemyTag, MeleeAttack, DashState,
@@ -239,6 +267,8 @@ src/
 │       ├── SpellDatabase.cs, SpellDefinition.cs, MagicHelper.cs
 │       ├── SpellId.cs, SpellEffectType.cs
 │       └── SpellsJsonContext.cs
+├── UI/                — UiRect, UiLayout, UiDraw, UiTheme, UiContext,
+│                        UiInputSystem, UiModal, TextMeasureCache, FlexDirection
 ├── Dungeon/           — TileMap, Room, DungeonGenerator
 │   └── Generation/    — BspTree, RoomPlacer, CorridorCarver, DecorationPainter
 └── Program.cs         — точка входа
@@ -282,6 +312,8 @@ TDD — в `docs/dungeon_of_shadows_tdd.md`.
 - Генерация уровней: `src/ECS/Exploration/FloorLifecycleSystem.cs`
 - Атлас предметов: `src/ECS/Items/ItemAtlas.cs`
 - Атлас тайлов: `src/ECS/Rendering/TileAtlas.cs`
+- UI framework: `src/UI/` (UiLayout, UiDraw, UiTheme, UiContext, UiRect)
+- UI конфигурация: `src/Core/Config/GameConfig.Ui.cs`
 - Планы по фазам: `docs/plans/`
 - Технический дизайн: `docs/dungeon_of_shadows_tdd.md`
 

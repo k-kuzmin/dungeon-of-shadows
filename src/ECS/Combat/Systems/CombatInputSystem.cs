@@ -1,5 +1,6 @@
 using Raylib_cs;
 using DungeonOfShadows.Core;
+using DungeonOfShadows.UI;
 
 namespace DungeonOfShadows.ECS.Combat.Systems;
 
@@ -11,13 +12,15 @@ public class CombatInputSystem : ITickable
     private readonly GameContext _ctx;
     private readonly World _world;
     private readonly GameConfig _config;
+    private readonly UiContext _uiCtx;
     private readonly List<int> _queryBuffer = new();
 
-    public CombatInputSystem(GameContext ctx, World world, GameConfig config)
+    public CombatInputSystem(GameContext ctx, World world, GameConfig config, UiContext uiCtx)
     {
         _ctx = ctx;
         _world = world;
         _config = config;
+        _uiCtx = uiCtx;
     }
 
     public void Tick(float dt)
@@ -37,8 +40,9 @@ public class CombatInputSystem : ITickable
         float playerCenterX = pos.X + ts / 2f;
         float playerCenterY = pos.Y + ts / 2f;
 
-        // ЛКМ — атака мечом
-        if (Raylib.IsMouseButtonPressed(MouseButton.Left) &&
+        // ЛКМ — атака мечом (пропускаем если UI забрал input)
+        if (!_uiCtx.InputConsumed &&
+            Raylib.IsMouseButtonPressed(MouseButton.Left) &&
             !world.Has<MeleeAttack>(playerId) &&
             !world.Has<MeleeCooldown>(playerId))
         {

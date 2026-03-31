@@ -12,6 +12,7 @@ using DungeonOfShadows.ECS.Magic;
 using DungeonOfShadows.ECS.Magic.Systems;
 using DungeonOfShadows.ECS.Rendering;
 using DungeonOfShadows.ECS.Rendering.Systems;
+using DungeonOfShadows.UI;
 
 namespace DungeonOfShadows.Core;
 
@@ -34,8 +35,14 @@ public static class ServiceRegistration
         services.AddInterfaces<ItemDatabase>();
         services.AddInterfaces<SpellDatabase>();
 
+        // UI framework
+        services.AddSingleton<UiTheme>();
+        services.AddSingleton<TextMeasureCache>();
+        services.AddSingleton<UiContext>();
+
         // Systems — registration order = tick/start/draw order
         services.AddInterfaces<FloorLifecycleSystem>();
+        services.AddInterfaces<UiInputSystem>();
         services.AddInterfaces<InputSystem>();
         services.AddInterfaces<InventoryInputSystem>();
         services.AddInterfaces<CombatInputSystem>();
@@ -72,6 +79,7 @@ public static class ServiceRegistration
         services.AddInterfaces<HudRenderSystem>();
         services.AddInterfaces<MagicHudRenderSystem>();
         services.AddInterfaces<InventoryRenderSystem>();
+        services.AddInterfaces<FullscreenMapRenderSystem>(); // поверх всех HUD элементов
 
         // Game
         services.AddSingleton<Game>();
