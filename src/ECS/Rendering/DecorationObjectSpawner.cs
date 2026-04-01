@@ -57,11 +57,8 @@ public static class DecorationObjectSpawner
                         SrcHeight = template.H,
                     });
 
-                    // Блокируем тайл только для явно массивных объектов.
-                    bool blocksTile = template.Type is DecorationObjectType.Crate
-                        or DecorationObjectType.CrateStack;
-                    if (blocksTile)
-                        map.Tiles[x, y].Walkable = false;
+                    // Блокируем тайл для всех твёрдых объектов.
+                    map.Tiles[x, y].Walkable = false;
                 }
             }
         }

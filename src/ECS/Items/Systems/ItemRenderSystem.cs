@@ -4,6 +4,10 @@ using DungeonOfShadows.ECS.Rendering;
 
 namespace DungeonOfShadows.ECS.Items.Systems;
 
+/// <summary>
+/// Рисует предметы на земле (ItemOnGround) с FOV-проверкой.
+/// Сундуки отрисовываются в YSortedRenderSystem.
+/// </summary>
 public class ItemRenderSystem : IRenderTickable
 {
     private readonly GameContext _ctx;
@@ -11,7 +15,6 @@ public class ItemRenderSystem : IRenderTickable
     private readonly World _world;
     private readonly GameConfig _config;
     private readonly List<int> _itemBuffer = new();
-    private readonly List<int> _chestBuffer = new();
 
     public RenderPhase Phase => RenderPhase.World;
 
@@ -27,7 +30,6 @@ public class ItemRenderSystem : IRenderTickable
     {
         var map = _ctx.Map;
         int ts = _config.ScaledTileSize;
-        float scale = _config.RenderScale;
         var itemsTex = _assets.GetTexture("items");
 
         // Предметы на земле — спрайты из items.png
@@ -55,34 +57,5 @@ public class ItemRenderSystem : IRenderTickable
             var dest = new Rectangle(destX, destY, destW, destH);
             Raylib.DrawTexturePro(itemsTex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
         }
-
-        // Сундуки — спрайтовые, анимация через Animation компонент
-
-        _world.QueryInto<Chest, Position>(_chestBuffer);
-        for (int i = 0; i < _chestBuffer.Count; i++)
-        {
-            int id = _chestBuffer[i];
-            ref var pos = ref _world.Get<Position>(id);
-
-            // FOV check
-            int tx = (int)((pos.X + ts / 2f) / ts);
-            int ty = (int)((pos.Y + ts / 2f) / ts);
-            if (map.InBounds(tx, ty) && map.Tiles[tx, ty].Visibility < 2)
-                continue;
-
-            if (!_world.Has<Animation>(id)) continue;
-            ref var anim = ref _world.Get<Animation>(id);
-            if (anim.Clip == null) continue;
-
-            var chestTex = _assets.GetTexture(anim.Clip.TextureId);
-            var src = anim.Clip.Frames[anim.FrameIndex];
-            float destW = src.Width * scale;
-            float destH = src.Height * scale;
-            float destX = pos.X + ts / 2f - destW / 2f;
-            float destY = pos.Y + ts - destH;
-            var dest = new Rectangle(destX, destY, destW, destH);
-            Raylib.DrawTexturePro(chestTex, src, dest, System.Numerics.Vector2.Zero, 0f, Color.White);
-        }
     }
-
 }

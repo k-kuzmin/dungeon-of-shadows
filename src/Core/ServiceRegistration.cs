@@ -70,11 +70,11 @@ public static class ServiceRegistration
 
         // Render sub-systems — registration order = draw order
         services.AddInterfaces<TileRenderSystem>();
-        services.AddInterfaces<EntityRenderSystem>();
+        services.AddInterfaces<ItemRenderSystem>();           // предметы на земле (часть пола)
+        services.AddInterfaces<DecorationObjectRenderSystem>();// факелы (на стенах)
+        services.AddInterfaces<YSortedRenderSystem>();        // сущности + сундуки + декор (Y-sorted)
         services.AddInterfaces<CombatRenderSystem>();
         services.AddInterfaces<SpellRenderSystem>();
-        services.AddInterfaces<ItemRenderSystem>();
-        services.AddInterfaces<DecorationObjectRenderSystem>();
         services.AddInterfaces<DebugRenderSystem>();
         services.AddInterfaces<HudRenderSystem>();
         services.AddInterfaces<MagicHudRenderSystem>();
