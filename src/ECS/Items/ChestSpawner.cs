@@ -1,4 +1,3 @@
-using Raylib_cs;
 using DungeonOfShadows.Core;
 using DungeonOfShadows.Dungeon;
 using DungeonOfShadows.ECS.Rendering;
@@ -7,18 +6,13 @@ namespace DungeonOfShadows.ECS.Items;
 
 public static class ChestSpawner
 {
-    public static void SpawnChests(World world, TileMap map, GameConfig config, int floor, int seed)
+    public static void SpawnChests(World world, TileMap map, GameConfig config, int floor, int seed,
+        AnimatorDatabase animDb)
     {
-        // Строим клипы один раз на вызов (разделяются между всеми сундуками этажа)
-        var idleClip = new AnimationClip("doors_chest",
-            new[] { TileAtlas.GetChestSource(0, false) },
-            1f, loop: true);
-
-        var openFrames = new Rectangle[config.ChestOpenFrameCount];
-        for (int i = 0; i < config.ChestOpenFrameCount; i++)
-            openFrames[i] = TileAtlas.GetChestSource((byte)i, true);
-        var openClip = new AnimationClip("doors_chest",
-            openFrames, config.ChestOpenFrameDuration, loop: false);
+        // Строим клипы один раз (разделяются между всеми сундуками этажа)
+        if (!animDb.TryGet("chest", out var chestDef)) return;
+        var chestClips = AnimatorFactory.Build(chestDef);
+        if (!chestClips.TryGetValue(chestDef.InitialClip, out var chestInitClip)) return;
 
         var rng = new Random(seed ^ (floor * 11_131) ^ 0x11CED);
         int target = rng.Next(config.ChestsPerFloorMin, config.ChestsPerFloorMax + 1);
@@ -44,13 +38,8 @@ public static class ChestSpawner
                 GuaranteedDefinitionId = PickGuaranteedLootId(rng, floor)
             });
 
-            var clips = new Dictionary<string, AnimationClip>
-            {
-                ["idle"] = idleClip,
-                ["open"] = openClip,
-            };
-            world.Add(id, new Animator(clips, "idle"));
-            world.Add(id, new Animation(idleClip));
+            world.Add(id, new Animator(chestClips, chestDef.InitialClip));
+            world.Add(id, new Animation(chestInitClip));
 
             spawned++;
         }

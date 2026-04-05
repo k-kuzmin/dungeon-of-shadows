@@ -18,13 +18,15 @@ public class FloorLifecycleSystem : IStartable, ITickable
     private readonly GameContext _ctx;
     private readonly World _world;
     private readonly GameConfig _config;
+    private readonly AnimatorDatabase _animDb;
     private readonly List<int> _queryBuffer = new();
 
-    public FloorLifecycleSystem(GameContext ctx, World world, GameConfig config)
+    public FloorLifecycleSystem(GameContext ctx, World world, GameConfig config, AnimatorDatabase animDb)
     {
         _ctx = ctx;
         _world = world;
         _config = config;
+        _animDb = animDb;
     }
 
     /// <summary>
@@ -106,8 +108,8 @@ public class FloorLifecycleSystem : IStartable, ITickable
         var world = _world;
         int ts = _config.ScaledTileSize;
 
-        EnemySpawner.SpawnEnemies(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
-        ChestSpawner.SpawnChests(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed);
+        EnemySpawner.SpawnEnemies(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed, _animDb);
+        ChestSpawner.SpawnChests(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed, _animDb);
 
         // Собираем тайлы, занятые уже заспавненными entity (враги, сундуки),
         // чтобы декор не спавнился поверх них.
@@ -120,7 +122,7 @@ public class FloorLifecycleSystem : IStartable, ITickable
         }
 
         DecorationObjectSpawner.SpawnObjects(world, _ctx.Map, _config, _ctx.CurrentFloor, _ctx.DungeonSeed, occupied);
-        TorchSpawner.SpawnTorches(world, _ctx.Map, _config);
+        TorchSpawner.SpawnTorches(world, _ctx.Map, _config, _animDb);
     }
 
     private void SpawnPlayer(Room spawnRoom)
@@ -152,10 +154,15 @@ public class FloorLifecycleSystem : IStartable, ITickable
         world.Add(playerId, spellSlots);
 
         // Анимация героя
-        var clips = CharacterAnimationBuilder.BuildHero(_config);
-        var initialClip = clips["Idle_Down"];
-        world.Add(playerId, new Animator(clips, "Idle_Down"));
-        world.Add(playerId, new Animation(initialClip));
+        if (_animDb.TryGet("hero", out var heroDef))
+        {
+            var clips = AnimatorFactory.Build(heroDef);
+            if (clips.TryGetValue(heroDef.InitialClip, out var heroInitClip))
+            {
+                world.Add(playerId, new Animator(clips, heroDef.InitialClip));
+                world.Add(playerId, new Animation(heroInitClip));
+            }
+        }
     }
 
     private void SnapCameraToPlayer()

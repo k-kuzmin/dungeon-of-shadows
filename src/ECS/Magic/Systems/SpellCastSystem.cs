@@ -1,6 +1,7 @@
 using DungeonOfShadows.Core;
 using DungeonOfShadows.ECS.Combat;
 using DungeonOfShadows.ECS.Magic.Components;
+using DungeonOfShadows.ECS.Rendering;
 
 namespace DungeonOfShadows.ECS.Magic.Systems;
 
@@ -13,15 +14,18 @@ public class SpellCastSystem : ITickable
     private readonly World _world;
     private readonly GameConfig _config;
     private readonly SpellDatabase _spellDb;
+    private readonly AnimatorDatabase _animDb;
     private readonly List<int> _playerBuffer = new();
     private readonly List<int> _enemyBuffer = new();
 
-    public SpellCastSystem(GameContext ctx, World world, GameConfig config, SpellDatabase spellDb)
+    public SpellCastSystem(GameContext ctx, World world, GameConfig config, SpellDatabase spellDb,
+        AnimatorDatabase animDb)
     {
         _ctx = ctx;
         _world = world;
         _config = config;
         _spellDb = spellDb;
+        _animDb = animDb;
     }
 
     public void Tick(float dt)
@@ -119,6 +123,22 @@ public class SpellCastSystem : ITickable
             ChainMaxTargets = def.ChainMaxTargets,
             ChainRadius = def.ChainRadius * ts
         });
+
+        // Анимация снаряда (если есть спрайт)
+        string? animId = def.SpellId switch
+        {
+            SpellId.MagicBolt => "magic_bolt",
+            SpellId.Fireball => "fireball",
+            _ => null
+        };
+        if (animId != null && _animDb.TryGet(animId, out var animDef))
+        {
+            var clip = AnimatorFactory.BuildSingleClip(animDef);
+            _world.Add(projId, new Sprite(Raylib_cs.Color.White));
+            _world.Add(projId, new Animation(clip));
+            float angleDeg = MathF.Atan2(dy, dx) * (180f / MathF.PI);
+            _world.Add(projId, new Rotation(angleDeg));
+        }
     }
 
     private void CastFrostNova(int casterId, SpellDefinition def, float centerX, float centerY, int damage)

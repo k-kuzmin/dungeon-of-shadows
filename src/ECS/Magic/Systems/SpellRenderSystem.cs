@@ -13,9 +13,9 @@ public class SpellRenderSystem : IRenderTickable
     private readonly GameContext _ctx;
     private readonly World _world;
     private readonly GameConfig _config;
-    private readonly List<int> _projBuffer = new();
-    private readonly List<int> _aoeBuffer = new();
-    private readonly List<int> _statusBuffer = new();
+    private readonly List<int> _projBuffer = new(16);
+    private readonly List<int> _aoeBuffer = new(16);
+    private readonly List<int> _statusBuffer = new(64);
 
     public RenderPhase Phase => RenderPhase.World;
 
@@ -59,11 +59,15 @@ public class SpellRenderSystem : IRenderTickable
             ref var proj = ref world.Get<Projectile>(id);
             ref var pos = ref world.Get<Position>(id);
 
+            // Снаряды с анимированным спрайтом отрисованы в Y-sorted pass — только glow
+            bool hasSprite = world.Has<Animation>(id);
+
             var (color, glow) = GetProjectileColors((SpellId)proj.SpellId);
             int r = radius;
             if (proj.IsAoe) r = (int)(radius * 1.4f);
 
-            Raylib.DrawCircle((int)pos.X, (int)pos.Y, r, color);
+            if (!hasSprite)
+                Raylib.DrawCircle((int)pos.X, (int)pos.Y, r, color);
             Raylib.DrawCircle((int)pos.X, (int)pos.Y, r * 2, glow);
         }
     }

@@ -2,14 +2,6 @@ namespace DungeonOfShadows.Core;
 
 public partial class GameConfig
 {
-    // Torch animation (6 кадров вертикально, 150ms per frame)
-    public int TorchFrameCount { get; init; } = 6;
-    public float TorchFrameDuration { get; init; } = 0.15f;
-
-    // Chest open animation
-    public int ChestOpenFrameCount { get; init; } = 5;
-    public float ChestOpenFrameDuration { get; init; } = 0.1f;
-
     // Floor variants (из walls_floor.png rows 6-8)
     public int FloorVariantCount { get; init; } = 8;
 

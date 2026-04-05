@@ -32,6 +32,7 @@ public static class ServiceRegistration
 
         // Services
         services.AddSingleton<AStarPathfinder>();
+        services.AddInterfaces<AnimatorDatabase>();
         services.AddInterfaces<ItemDatabase>();
         services.AddInterfaces<SpellDatabase>();
 

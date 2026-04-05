@@ -53,6 +53,10 @@ public sealed class AssetProvider : IAssetProvider, IStartable
         ("orc3_attack",     "assets/sprites/characters/orc_lvl3/orc3_attack_with_shadow.png"),
         ("orc3_run_attack", "assets/sprites/characters/orc_lvl3/orc3_run_attack_with_shadow.png"),
         ("orc3_death",      "assets/sprites/characters/orc_lvl3/orc3_death_with_shadow.png"),
+
+        // Projectiles
+        ("fireball",        "assets/sprites/projectiles/fireball.png"),
+        ("magic_bolt",      "assets/sprites/projectiles/magic_bolt.png"),
     };
 
     public void Start()

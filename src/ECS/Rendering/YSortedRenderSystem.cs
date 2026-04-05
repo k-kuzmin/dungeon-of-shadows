@@ -171,7 +171,7 @@ public class YSortedRenderSystem : IRenderTickable
             ref var anim = ref world.Get<Animation>(id);
             if (anim.Clip != null)
             {
-                DrawAnimatedSprite(ref pos, ref anim, tint, scale, ts);
+                DrawAnimatedSprite(id, ref pos, ref anim, tint, scale, ts);
                 return;
             }
         }
@@ -233,7 +233,7 @@ public class YSortedRenderSystem : IRenderTickable
         }
     }
 
-    private void DrawAnimatedSprite(ref Position pos, ref Animation anim, Color tint, int scale, int ts)
+    private void DrawAnimatedSprite(int entityId, ref Position pos, ref Animation anim, Color tint, int scale, int ts)
     {
         var texture = _assets.GetTexture(anim.Clip.TextureId);
         var srcRect = anim.Clip.Frames[anim.FrameIndex];
@@ -241,12 +241,24 @@ public class YSortedRenderSystem : IRenderTickable
         int destW = (int)(srcRect.Width * scale);
         int destH = (int)(srcRect.Height * scale);
 
+        // Снаряды с Rotation рисуются по центру позиции, без character offset
+        if (_world.Has<Rotation>(entityId))
+        {
+            ref var rot = ref _world.Get<Rotation>(entityId);
+            var origin = new System.Numerics.Vector2(destW / 2f, destH / 2f);
+            // DrawTexturePro рисует так, что origin попадает в (destRect.X, destRect.Y),
+            // поэтому сдвигаем на origin чтобы центр спрайта совпал с pos
+            var destRect = new Rectangle(pos.X + destW / 2f, pos.Y + destH / 2f, destW, destH);
+            Raylib.DrawTexturePro(texture, srcRect, destRect, origin, rot.Degrees, tint);
+            return;
+        }
+
         float drawX = pos.X + ts / 2f - destW / 2f;
         float drawY = pos.Y + ts - destH + _config.CharacterSpriteOffsetY * scale;
 
-        var destRect = new Rectangle(drawX, drawY, destW, destH);
+        var destRectChar = new Rectangle(drawX, drawY, destW, destH);
 
-        Raylib.DrawTexturePro(texture, srcRect, destRect,
+        Raylib.DrawTexturePro(texture, srcRect, destRectChar,
             System.Numerics.Vector2.Zero, 0f, tint);
     }
 
@@ -261,7 +273,7 @@ public class YSortedRenderSystem : IRenderTickable
             if (anim.Clip != null)
             {
                 var tint = new Color((byte)255, (byte)255, (byte)255, alpha);
-                DrawAnimatedSprite(ref pos, ref anim, tint, scale, ts);
+                DrawAnimatedSprite(id, ref pos, ref anim, tint, scale, ts);
                 return;
             }
         }

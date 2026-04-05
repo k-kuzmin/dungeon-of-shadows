@@ -9,16 +9,16 @@ namespace DungeonOfShadows.ECS.Rendering;
 /// </summary>
 public static class TorchSpawner
 {
-    public static void SpawnTorches(World world, TileMap map, GameConfig config)
+    public static void SpawnTorches(World world, TileMap map, GameConfig config, AnimatorDatabase animDb)
     {
         int ts = config.ScaledTileSize;
 
         // Один клип на все факелы этажа (разделяемый, AnimationClip — reference type)
-        var frames = new Raylib_cs.Rectangle[config.TorchFrameCount];
-        for (int i = 0; i < config.TorchFrameCount; i++)
-            frames[i] = TileAtlas.GetTorchSource((byte)i);
+        AnimationClip? clip = null;
+        if (animDb.TryGet("torch", out var torchDef))
+            clip = AnimatorFactory.BuildSingleClip(torchDef);
 
-        var clip = new AnimationClip("fire_large", frames, config.TorchFrameDuration, loop: true);
+        if (clip == null) return;
 
         for (int x = 0; x < map.Width; x++)
         {

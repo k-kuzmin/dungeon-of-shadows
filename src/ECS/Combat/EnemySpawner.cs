@@ -9,7 +9,8 @@ namespace DungeonOfShadows.ECS.Combat;
 /// </summary>
 public static class EnemySpawner
 {
-    public static void SpawnEnemies(World world, TileMap map, GameConfig config, int floor, int seed)
+    public static void SpawnEnemies(World world, TileMap map, GameConfig config, int floor, int seed,
+        AnimatorDatabase animDb)
     {
         var rng = new Random(seed ^ (floor * 7_919) ^ 0xC0BA7);
 
@@ -31,13 +32,13 @@ public static class EnemySpawner
 
                 if (!map.IsWalkable(tx, ty)) continue;
 
-                SpawnEnemy(world, template, tx, ty, floor, config);
+                SpawnEnemy(world, template, tx, ty, floor, config, animDb);
             }
         }
     }
 
     private static void SpawnEnemy(World world, EnemyTemplate template, int tx, int ty,
-        int floor, GameConfig config)
+        int floor, GameConfig config, AnimatorDatabase animDb)
     {
         int ts = config.ScaledTileSize;
         float scale = config.EnemyStatFloorScale;
@@ -76,9 +77,14 @@ public static class EnemySpawner
         });
 
         // Анимация врага
-        var clips = CharacterAnimationBuilder.BuildEnemy(template.SpritePrefix, config);
-        var initialClip = clips["Idle_Down"];
-        world.Add(id, new Animator(clips, "Idle_Down"));
-        world.Add(id, new Animation(initialClip));
+        if (animDb.TryGet(template.SpritePrefix, out var animDef))
+        {
+            var clips = AnimatorFactory.Build(animDef);
+            if (clips.TryGetValue(animDef.InitialClip, out var enemyInitClip))
+            {
+                world.Add(id, new Animator(clips, animDef.InitialClip));
+                world.Add(id, new Animation(enemyInitClip));
+            }
+        }
     }
 }
