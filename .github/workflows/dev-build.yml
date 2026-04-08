@@ -1,0 +1,53 @@
+name: Dev Build
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [develop]
+
+jobs:
+  build:
+    if: github.event.pull_request.merged == true
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Calculate version
+        id: version
+        shell: bash
+        run: |
+          LAST=$(git tag -l 'dev-v0.1.*' | sed 's/dev-v0\.1\.//' | sort -n | tail -1)
+          NEXT=$((${LAST:--1} + 1))
+          echo "tag=dev-v0.1.${NEXT}" >> "$GITHUB_OUTPUT"
+          echo "number=${NEXT}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish win-x64
+        run: dotnet publish DungeonOfShadows.csproj -c Release -r win-x64 -p:Version=0.1.${{ steps.version.outputs.number }}
+
+      - name: Package
+        shell: bash
+        run: |
+          cd bin/Release/net8.0/win-x64/publish
+          7z a "$GITHUB_WORKSPACE/DungeonOfShadows-${{ steps.version.outputs.tag }}-win-x64.zip" .
+
+      - name: Create tag
+        run: |
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DungeonOfShadows-${{ steps.version.outputs.tag }}-win-x64
+          path: DungeonOfShadows-${{ steps.version.outputs.tag }}-win-x64.zip
