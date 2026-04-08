@@ -15,6 +15,7 @@ public partial class GameConfig
     public int DungeonMaxRoomH { get; init; } = 10;
     public int DungeonBspMinLeaf { get; init; } = 16; // MaxRoomW + 4 (отступ 2 тайла для стен)
     public int DecorationChancePercent { get; init; } = 8;
+    public int TorchSpacing { get; init; } = 4;
 
     // FOV
     public int FovRadius { get; init; } = 7;

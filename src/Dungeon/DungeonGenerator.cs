@@ -82,7 +82,7 @@ public static class DungeonGenerator
         map.Tiles[stairRoom.CenterX, stairRoom.CenterY] = new Tile(TileType.StairDown);
 
         // 9. Декорации
-        DecorationPainter.Paint(map, config.DecorationChancePercent, rng);
+        DecorationPainter.Paint(map, config.DecorationChancePercent, config.TorchSpacing, rng);
 
         // 10. Автотайлинг — baked индексы стен, пола, оверлеев
         AutotileComputer.ComputeAll(map, config.FloorVariantCount, rng);

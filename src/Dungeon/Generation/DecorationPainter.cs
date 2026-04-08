@@ -3,25 +3,26 @@ namespace DungeonOfShadows.Dungeon.Generation;
 internal static class DecorationPainter
 {
     /// <summary>
-    /// Заполняет слой декораций случайными пропсами на тайлах пола.
+    /// Заполняет слой декораций: факелы регулярно вдоль фасадов стен,
+    /// случайные пропсы (трещины, кости, лужи) на остальных тайлах пола.
     /// </summary>
-    internal static void Paint(TileMap map, int chancePercent, Random rng)
+    internal static void Paint(TileMap map, int chancePercent, int torchSpacing, Random rng)
     {
+        // Проход 1: факелы с регулярным интервалом вдоль фасадов стен (Floor где y-1 = Wall)
+        PlaceTorches(map, torchSpacing, rng);
+
+        // Проход 2: случайные декорации пола (без факелов)
         for (int x = 0; x < map.Width; x++)
         {
             for (int y = 0; y < map.Height; y++)
             {
                 if (map.Tiles[x, y].Type != TileType.Floor) continue;
+                if (map.Decorations[x, y] != DecorationType.None) continue;
 
                 if (rng.Next(100) >= chancePercent) continue;
 
-                // Факелы — только у стен
-                bool nearWall = IsAdjacentToWall(map, x, y);
-
                 int roll = rng.Next(100);
-                if (nearWall && roll < 30)
-                    map.Decorations[x, y] = DecorationType.Torch;
-                else if (roll < 55)
+                if (roll < 55)
                     map.Decorations[x, y] = DecorationType.CrackFloor;
                 else if (roll < 80)
                     map.Decorations[x, y] = DecorationType.Bones;
@@ -31,11 +32,42 @@ internal static class DecorationPainter
         }
     }
 
-    private static bool IsAdjacentToWall(TileMap map, int x, int y)
+    /// <summary>
+    /// Сканирует горизонтальные прогоны wall-face тайлов и ставит факелы с интервалом.
+    /// Wall-face = Floor-тайл, у которого сверху (y-1) стена.
+    /// </summary>
+    private static void PlaceTorches(TileMap map, int spacing, Random rng)
     {
-        return (map.InBounds(x - 1, y) && map.Tiles[x - 1, y].Type == TileType.Wall) ||
-               (map.InBounds(x + 1, y) && map.Tiles[x + 1, y].Type == TileType.Wall) ||
-               (map.InBounds(x, y - 1) && map.Tiles[x, y - 1].Type == TileType.Wall) ||
-               (map.InBounds(x, y + 1) && map.Tiles[x, y + 1].Type == TileType.Wall);
+        for (int y = 1; y < map.Height; y++)
+        {
+            int runStart = -1;
+
+            for (int x = 0; x <= map.Width; x++)
+            {
+                bool isWallFace = x < map.Width
+                    && map.Tiles[x, y].Type == TileType.Floor
+                    && map.Tiles[x, y - 1].Type == TileType.Wall;
+
+                if (isWallFace)
+                {
+                    if (runStart < 0) runStart = x;
+                }
+                else if (runStart >= 0)
+                {
+                    PlaceTorchesInRun(map, runStart, x, y, spacing, rng);
+                    runStart = -1;
+                }
+            }
+        }
+    }
+
+    private static void PlaceTorchesInRun(TileMap map, int startX, int endX, int y, int spacing, Random rng)
+    {
+        int runLen = endX - startX;
+        if (runLen < 2) return;
+
+        int offset = runLen >= spacing ? rng.Next(spacing) : rng.Next(runLen);
+        for (int i = offset; i < runLen; i += spacing)
+            map.Decorations[startX + i, y] = DecorationType.Torch;
     }
 }
