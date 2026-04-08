@@ -23,15 +23,25 @@ public sealed class AnimatorDatabase : IStartable
     {
         try
         {
-            string path = Path.Combine(AppContext.BaseDirectory, "assets", "data", "animations.json");
-            if (!File.Exists(path)) return;
-
-            string json = File.ReadAllText(path);
-            var defs = JsonSerializer.Deserialize(json, AnimatorsJsonContext.Default.AnimatorDefinitionArray);
-            if (defs == null) return;
-
-            for (int i = 0; i < defs.Length; i++)
-                _defs.TryAdd(defs[i].Id, defs[i]);
+            // Попытка загрузить из директории с отдельными файлами
+            string dir = Path.Combine(AppContext.BaseDirectory, "assets", "data", "animations");
+            if (Directory.Exists(dir))
+            {
+                foreach (string file in Directory.GetFiles(dir, "*.json"))
+                {
+                    try
+                    {
+                        string json = File.ReadAllText(file);
+                        var def = JsonSerializer.Deserialize(json, AnimatorsJsonContext.Default.AnimatorDefinition);
+                        if (def != null)
+                            _defs.TryAdd(def.Id, def);
+                    }
+                    catch
+                    {
+                        // Пропускаем битый файл
+                    }
+                }
+            }
         }
         catch
         {

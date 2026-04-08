@@ -4,6 +4,7 @@ namespace DungeonOfShadows.ECS.Rendering;
 
 [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
 [JsonSerializable(typeof(AnimatorDefinition[]))]
+[JsonSerializable(typeof(AnimatorDefinition))]
 public partial class AnimatorsJsonContext : JsonSerializerContext
 {
 }

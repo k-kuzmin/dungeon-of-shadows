@@ -132,9 +132,12 @@ public interface IAssetProvider : IDisposable
 - **Продьюсеры**: `MeleeAttackSystem`, `AISystem`, `ProjectileSystem`, `StatusEffectSystem` — пишут события
 - **Консьюмер**: `HealthSystem` — читает, применяет урон, спавнит DamageFlash/DamageNumber, дренит список
 
-### SpellDatabase
+### Data-driven базы данных (JSON + fallback)
 
-Загрузка заклинаний из JSON (`assets/data/spells.json`) с fallback на хардкод. Реализует `IStartable`. Используется системами каста для получения параметров заклинания по ID.
+Общий паттерн: `IStartable`, загружает JSON при `Start()`, при ошибке — fallback на хардкод.
+- **AnimatorDatabase** — `assets/data/animations/*.json` (по файлу на аниматор), fallback на единый `animations.json`, затем хардкод. Используется спавнерами через `AnimatorFactory`.
+- **ItemDatabase** — `assets/data/items.json`. Используется системами предметов.
+- **SpellDatabase** — `assets/data/spells.json`. Используется системами каста для получения параметров заклинания по ID.
 
 ### MagicHelper
 
@@ -180,6 +183,9 @@ public interface IAssetProvider : IDisposable
 ```
 --- Start phase (однократно) ---
 AssetProvider         → загрузка всех текстур
+AnimatorDatabase      → загрузка конфигов анимаций из JSON
+ItemDatabase          → загрузка определений предметов из JSON
+SpellDatabase         → загрузка определений заклинаний из JSON
 FloorLifecycleSystem  → генерация 1-го этажа, спавн игрока и сущностей
 
 --- Tick phase (каждый кадр) ---
@@ -205,15 +211,16 @@ ItemUseSystem         → применение предметов (зелья, �
 DamageNumberSystem    → float-up чисел урона
 FloorTransitionSystem → детектит лестницу + ставит FloorTransitionRequested
 FovSystem             → туман войны
+CharacterAnimationStateSystem → выбор клипа анимации по состоянию персонажа
 AnimationSystem       → покадровая анимация спрайтов
 CameraSystem          → камера (тикает всегда)
 RenderSystem          → обёртка рендера (тикает всегда)
   ├─ TileRenderSystem      (World) — тайлы + декор + FOV
-  ├─ EntityRenderSystem    (World) — сущности + FOV + DamageFlash + afterimage
+  ├─ ItemRenderSystem      (World) — предметы на земле (часть пола)
+  ├─ DecorationObjectRenderSystem (World) — факелы (на стенах)
+  ├─ YSortedRenderSystem   (World) — сущности + сундуки + декор (Y-sorted глубина)
   ├─ CombatRenderSystem    (World) — дуга атаки, HP-бары врагов, числа урона
   ├─ SpellRenderSystem     (World) — снаряды, AoE визуалы, индикаторы статус-эффектов
-  ├─ ItemRenderSystem      (World) — предметы на земле, сундуки
-  ├─ DecorationObjectRenderSystem (World) — декоративные объекты
   ├─ DebugRenderSystem     (World) — сетка + коллайдеры
   ├─ HudRenderSystem       (Screen) — FPS, этаж, HP/MP бары, мини-карта
   ├─ MagicHudRenderSystem  (Screen) — 3 spell slots UI, подсветка активного
@@ -279,6 +286,9 @@ assets/
 │   └── items/         — спрайты предметов + items.png спрайтшит
 ├── sounds/
 └── data/
+    ├── animations/    — конфиги аниматоров (по файлу на сущность)
+    ├── items.json     — определения предметов
+    └── spells.json    — определения заклинаний
 tools/                 — утилиты (pack_items.py — упаковка спрайтшитов)
 docs/plans/            — планы по фазам разработки
 ```
@@ -314,6 +324,7 @@ TDD — в `docs/dungeon_of_shadows_tdd.md`.
 - Атлас тайлов: `src/ECS/Rendering/TileAtlas.cs`
 - UI framework: `src/UI/` (UiLayout, UiDraw, UiTheme, UiContext, UiRect)
 - UI конфигурация: `src/Core/Config/GameConfig.Ui.cs`
+- Анимации (база + фабрика): `src/ECS/Rendering/AnimatorDatabase.cs`, `AnimatorFactory.cs`
 - Планы по фазам: `docs/plans/`
 - Технический дизайн: `docs/dungeon_of_shadows_tdd.md`
 
