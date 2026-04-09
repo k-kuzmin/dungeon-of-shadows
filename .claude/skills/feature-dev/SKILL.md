@@ -13,10 +13,30 @@ argument-hint: "<description> | resume"
 
 # Feature Dev Skill
 
+## Phase Checklist (обязательно)
+
+При старте любого flow (новая фича или resume) **сразу** создать 7 задач через `TaskCreate`:
+
+1. `Phase 1: Discovery` — status по ситуации
+2. `Phase 2: Codebase Exploration`
+3. `Phase 3: Clarifying Questions`
+4. `Phase 4: Architecture Design`
+5. `Phase 5: Implementation`
+6. `Phase 6: Quality Review`
+7. `Phase 7: Summary`
+
+**Правила:**
+- Текущая фаза — `in_progress`, завершённые — `completed`, будущие — `pending`
+- При resume: прочитать `context.md` → выставить статусы по `current_phase`
+- Переход к следующей фазе = `TaskUpdate` предыдущей → completed, следующей → in_progress
+- Чеклист должен отражать реальный прогресс на протяжении всей работы
+
+---
+
 ## Entry Point
 
 - **`/feature-dev resume`** -> Resume Flow
-- **`/feature-dev <description>`** -> Phase 1
+- **`/feature-dev <description>`** -> создать чеклист (все pending кроме Phase 1 = in_progress) → Phase 1
 - **`/feature-dev`** (no args) -> ask: new feature or resume?
 
 ---
@@ -26,8 +46,9 @@ argument-hint: "<description> | resume"
 1. Scan `tasks/*/context.md`, list unfinished (status != done).
 2. Ask which to resume. **[WAIT]**
 3. Read: `context.md`, `plan.md`, `architecture.md`, `decisions.md` (if exist).
-4. Output: where stopped, decisions so far, blockers, next step.
-5. Confirm. **[WAIT]** Continue from indicated phase.
+4. Создать чеклист — выставить статусы по `current_phase` из context.md.
+5. Output: where stopped, decisions so far, blockers, next step.
+6. Confirm. **[WAIT]** Continue from indicated phase.
 
 ---
 
