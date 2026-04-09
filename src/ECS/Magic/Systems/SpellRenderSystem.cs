@@ -67,8 +67,10 @@ public class SpellRenderSystem : IRenderTickable
             if (proj.IsAoe) r = (int)(radius * 1.4f);
 
             if (!hasSprite)
+            {
                 Raylib.DrawCircle((int)pos.X, (int)pos.Y, r, color);
-            Raylib.DrawCircle((int)pos.X, (int)pos.Y, r * 2, glow);
+                Raylib.DrawCircle((int)pos.X, (int)pos.Y, r * 2, glow);
+            }
         }
     }
 

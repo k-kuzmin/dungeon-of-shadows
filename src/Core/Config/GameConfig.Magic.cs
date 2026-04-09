@@ -22,4 +22,18 @@ public partial class GameConfig
 
     // AoE visuals
     public float AoEVisualDuration { get; init; } = 0.3f;
+
+    // Spell levels
+    public int MaxSpellLevel { get; init; } = 5;
+    public float SpellLevelDamageBonus { get; init; } = 0.15f;
+    public float SpellLevelHealBonus { get; init; } = 0.15f;
+    public float SpellLevelCooldownReduction { get; init; } = 0.08f;
+
+    // Spell slot unlocks (этаж → новый capacity)
+    public int SpellSlotInitialCapacity { get; init; } = 3;
+    public int SpellSlotUnlockFloor4 { get; init; } = 4;
+    public int SpellSlotCapacityAtFloor4 { get; init; } = 4;
+    public int SpellSlotUnlockFloor7 { get; init; } = 7;
+    public int SpellSlotCapacityAtFloor7 { get; init; } = 5;
+    public int SpellSlotMaxCapacity { get; init; } = 5;
 }

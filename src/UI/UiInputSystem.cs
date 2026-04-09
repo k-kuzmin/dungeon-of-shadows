@@ -21,9 +21,35 @@ public class UiInputSystem : ITickable
     {
         _uiCtx.ClearFrame();
 
-        if (!_uiCtx.HasModal) return;
+        // SelectionModal (приоритет над стандартной модалкой)
+        if (_uiCtx.HasSelectionModal)
+        {
+            _uiCtx.InputConsumed = true;
+            var sel = _uiCtx.SelectionModal!;
 
-        // Модалка блокирует весь input
+            if (Raylib.IsKeyPressed(KeyboardKey.Up) || Raylib.IsKeyPressed(KeyboardKey.W))
+                sel.MoveUp();
+            else if (Raylib.IsKeyPressed(KeyboardKey.Down) || Raylib.IsKeyPressed(KeyboardKey.S))
+                sel.MoveDown();
+            else if (Raylib.IsKeyPressed(KeyboardKey.Enter))
+            {
+                int idx = sel.SelectedIndex;
+                var onConfirm = sel.OnConfirm;
+                _uiCtx.CloseSelectionModal();
+                onConfirm?.Invoke(idx);
+            }
+            else if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+            {
+                var onCancel = sel.OnCancel;
+                _uiCtx.CloseSelectionModal();
+                onCancel?.Invoke();
+            }
+            return;
+        }
+
+        if (!_uiCtx.HasStandardModal) return;
+
+        // Стандартная модалка блокирует весь input
         _uiCtx.InputConsumed = true;
 
         if (Raylib.IsKeyPressed(KeyboardKey.Escape))

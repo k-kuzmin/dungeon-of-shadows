@@ -44,23 +44,26 @@ public class SpellInputSystem : ITickable
 
         if (_ctx.ShowInventory || _uiCtx.InputConsumed) return;
 
+        int cap = slots.Capacity;
+        if (cap <= 0) return;
+
         // Z — предыдущий слот
         if (Raylib.IsKeyPressed(KeyboardKey.Z))
-            slots.ActiveSlotIndex = (slots.ActiveSlotIndex + 2) % 3;
+            slots.ActiveSlotIndex = (slots.ActiveSlotIndex + cap - 1) % cap;
 
         // X — следующий слот
         if (Raylib.IsKeyPressed(KeyboardKey.X))
-            slots.ActiveSlotIndex = (slots.ActiveSlotIndex + 1) % 3;
+            slots.ActiveSlotIndex = (slots.ActiveSlotIndex + 1) % cap;
 
         // Колесо мыши — переключение слотов
         float wheel = Raylib.GetMouseWheelMove();
         if (wheel > 0)
-            slots.ActiveSlotIndex = (slots.ActiveSlotIndex + 2) % 3;
+            slots.ActiveSlotIndex = (slots.ActiveSlotIndex + cap - 1) % cap;
         else if (wheel < 0)
-            slots.ActiveSlotIndex = (slots.ActiveSlotIndex + 1) % 3;
+            slots.ActiveSlotIndex = (slots.ActiveSlotIndex + 1) % cap;
 
         // ПКМ — каст активного заклинания (пропускаем если UI забрал input)
-        if (!_uiCtx.InputConsumed && Raylib.IsMouseButtonPressed(MouseButton.Right))
+        if (Raylib.IsMouseButtonPressed(MouseButton.Right))
         {
             if (world.Has<SpellCastRequest>(playerId)) return;
             if (slots.CastCooldown > 0f) return;
@@ -84,11 +87,17 @@ public class SpellInputSystem : ITickable
             var mouseWorld = Raylib.GetScreenToWorld2D(mouseScreen, _ctx.Camera);
 
             mana.MP -= def.ManaCost;
-            slots.CastCooldown = def.CastCooldown;
+            int level = slots.GetActiveLevel();
+            float cooldown = def.CastCooldown;
+            if (def.IsUtility && level > 1)
+                cooldown *= 1f - (level - 1) * _config.SpellLevelCooldownReduction;
+            slots.CastCooldown = cooldown;
+            slots.MaxCastCooldown = cooldown;
 
             world.Add(playerId, new SpellCastRequest
             {
                 SpellId = spellId,
+                SpellLevel = level,
                 TargetX = mouseWorld.X,
                 TargetY = mouseWorld.Y
             });

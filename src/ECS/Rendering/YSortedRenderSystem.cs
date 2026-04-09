@@ -246,9 +246,8 @@ public class YSortedRenderSystem : IRenderTickable
         {
             ref var rot = ref _world.Get<Rotation>(entityId);
             var origin = new System.Numerics.Vector2(destW / 2f, destH / 2f);
-            // DrawTexturePro рисует так, что origin попадает в (destRect.X, destRect.Y),
-            // поэтому сдвигаем на origin чтобы центр спрайта совпал с pos
-            var destRect = new Rectangle(pos.X + destW / 2f, pos.Y + destH / 2f, destW, destH);
+            // origin в DrawTexturePro — точка привязки; (destRect.X, destRect.Y) = позиция origin
+            var destRect = new Rectangle(pos.X, pos.Y, destW, destH);
             Raylib.DrawTexturePro(texture, srcRect, destRect, origin, rot.Degrees, tint);
             return;
         }

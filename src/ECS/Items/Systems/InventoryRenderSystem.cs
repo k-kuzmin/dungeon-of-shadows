@@ -78,6 +78,13 @@ public class InventoryRenderSystem : IRenderTickable
             Raylib.DrawText(_ctx.UiMessage, x, 16, _config.UiMessageFontSize, Color.Gold);
         }
 
+        // SelectionModal рисуется поверх всего (даже без открытого инвентаря)
+        if (_uiCtx.HasSelectionModal)
+        {
+            UiSelectionModal.Draw(_uiCtx.SelectionModal!, _config, _theme, _textCache);
+            return;
+        }
+
         if (!_ctx.ShowInventory)
             return;
 
@@ -177,7 +184,7 @@ public class InventoryRenderSystem : IRenderTickable
         DrawTooltip(_cachedTooltip, _cachedCompare, panelX + 360, panelY + 56);
 
         // Модальное окно поверх всего
-        if (_uiCtx.HasModal)
+        if (_uiCtx.HasStandardModal)
             UiModal.Draw(_uiCtx.TopModal, _config, _theme, _textCache);
     }
 

@@ -79,24 +79,36 @@ public static class MagicHelper
         effects.SetSlot(effects.ActiveCount, default);
     }
 
-    /// <summary>Проверяет, можно ли выучить заклинание (не выучено + есть свободный слот).</summary>
-    public static bool CanLearnSpell(ref SpellSlots slots, int spellId)
+    /// <summary>
+    /// Пытается выучить или улучшить заклинание. Возвращает результат без мутации при SlotsFull/AlreadyMaxLevel.
+    /// </summary>
+    public static LearnResult TryLearnOrUpgrade(ref SpellSlots slots, int spellId, int maxSpellLevel)
     {
-        if (slots.Slot0SpellId == spellId || slots.Slot1SpellId == spellId || slots.Slot2SpellId == spellId)
-            return false;
-        return slots.Slot0SpellId < 0 || slots.Slot1SpellId < 0 || slots.Slot2SpellId < 0;
+        int existingIdx = slots.FindSpellIndex(spellId);
+
+        if (existingIdx >= 0)
+        {
+            // Заклинание уже известно — пробуем апгрейд
+            ref var slot = ref slots.Slots[existingIdx];
+            if (slot.Level >= maxSpellLevel)
+                return LearnResult.AlreadyMaxLevel;
+
+            slot.Level++;
+            return LearnResult.Upgraded;
+        }
+
+        // Новое заклинание — ищем свободный слот
+        int freeIdx = slots.TryFindFreeSlot();
+        if (freeIdx < 0)
+            return LearnResult.SlotsFull;
+
+        slots.SetSlot(freeIdx, spellId, 1);
+        return LearnResult.Learned;
     }
 
-    /// <summary>Находит первый свободный слот и записывает spellId. Возвращает true если успешно.</summary>
-    public static bool TryLearnSpell(ref SpellSlots slots, int spellId)
+    /// <summary>Заменяет заклинание в указанном слоте на новое (уровень 1).</summary>
+    public static void ReplaceSpell(ref SpellSlots slots, int slotIndex, int newSpellId)
     {
-        // Проверяем, не выучено ли уже
-        if (slots.Slot0SpellId == spellId || slots.Slot1SpellId == spellId || slots.Slot2SpellId == spellId)
-            return false;
-
-        if (slots.Slot0SpellId < 0) { slots.Slot0SpellId = spellId; return true; }
-        if (slots.Slot1SpellId < 0) { slots.Slot1SpellId = spellId; return true; }
-        if (slots.Slot2SpellId < 0) { slots.Slot2SpellId = spellId; return true; }
-        return false;
+        slots.SetSlot(slotIndex, newSpellId, 1);
     }
 }

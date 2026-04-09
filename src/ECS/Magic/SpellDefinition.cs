@@ -66,4 +66,7 @@ public sealed class SpellDefinition
     [JsonIgnore]
     public bool IsInstantAoe => ProjectileSpeed <= 0 && AoeRadius > 0;
 
+    /// <summary>Утилитарное заклинание (Heal, ShadowStep) — скейлит кулдаун вместо урона.</summary>
+    [JsonIgnore]
+    public bool IsUtility => BaseDamage <= 0 && AoeRadius <= 0 && !IsProjectile;
 }

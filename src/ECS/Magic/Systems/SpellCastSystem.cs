@@ -50,15 +50,12 @@ public class SpellCastSystem : ITickable
         float centerX = pos.X + ts / 2f;
         float centerY = pos.Y + ts / 2f;
 
-        int damage = CalcDamage(playerId, def);
+        int damage = CalcDamage(playerId, def, req.SpellLevel);
 
         switch (def.SpellId)
         {
             case SpellId.MagicBolt:
             case SpellId.Fireball:
-                SpawnProjectile(playerId, def, centerX, centerY, req.TargetX, req.TargetY, damage);
-                break;
-
             case SpellId.ChainLightning:
                 SpawnProjectile(playerId, def, centerX, centerY, req.TargetX, req.TargetY, damage);
                 break;
@@ -72,14 +69,14 @@ public class SpellCastSystem : ITickable
                 break;
 
             case SpellId.Heal:
-                CastHeal(playerId, def);
+                CastHeal(playerId, def, req.SpellLevel);
                 break;
         }
 
         world.Remove<SpellCastRequest>(playerId);
     }
 
-    private int CalcDamage(int casterId, SpellDefinition def)
+    private int CalcDamage(int casterId, SpellDefinition def, int level)
     {
         int mInt = 0;
         if (_world.Has<Stats>(casterId))
@@ -88,7 +85,10 @@ public class SpellCastSystem : ITickable
             mInt = stats.INT;
         }
 
-        return (int)(def.BaseDamage + mInt * def.IntScaling);
+        float baseDmg = def.BaseDamage + mInt * def.IntScaling;
+        if (level > 1)
+            baseDmg *= 1f + (level - 1) * _config.SpellLevelDamageBonus;
+        return (int)baseDmg;
     }
 
     private void SpawnProjectile(int ownerId, SpellDefinition def,
@@ -206,7 +206,7 @@ public class SpellCastSystem : ITickable
         MagicHelper.SpawnAoEVisual(_world, _config, fromX, fromY, ts * 0.8f, 80, 40, 120, 160);
     }
 
-    private void CastHeal(int playerId, SpellDefinition def)
+    private void CastHeal(int playerId, SpellDefinition def, int level)
     {
         if (!_world.Has<Health>(playerId)) return;
         ref var health = ref _world.Get<Health>(playerId);
@@ -218,8 +218,10 @@ public class SpellCastSystem : ITickable
             mInt = stats.INT;
         }
 
-        int heal = (int)(def.BaseHeal + mInt * def.HealIntScaling);
-        health.HP = Math.Min(health.HP + heal, health.MaxHP);
+        float heal = def.BaseHeal + mInt * def.HealIntScaling;
+        if (level > 1)
+            heal *= 1f + (level - 1) * _config.SpellLevelHealBonus;
+        health.HP = Math.Min(health.HP + (int)heal, health.MaxHP);
 
         int ts = _config.ScaledTileSize;
         ref var pos = ref _world.Get<Position>(playerId);

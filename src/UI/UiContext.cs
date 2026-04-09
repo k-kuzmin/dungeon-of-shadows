@@ -14,9 +14,13 @@ public class UiContext
     public bool InputConsumed { get; set; }
 
     private readonly Stack<ModalDescriptor> _modalStack = new();
+    private SelectionModalDescriptor? _selectionModal;
 
-    public bool HasModal => _modalStack.Count > 0;
+    public bool HasModal => _modalStack.Count > 0 || _selectionModal != null;
+    public bool HasStandardModal => _modalStack.Count > 0;
+    public bool HasSelectionModal => _selectionModal != null;
     public ModalDescriptor TopModal => _modalStack.Peek();
+    public SelectionModalDescriptor? SelectionModal => _selectionModal;
 
     /// <summary>
     /// Сброс per-frame состояния. Вызывается в начале каждого кадра.
@@ -38,7 +42,22 @@ public class UiContext
             _modalStack.Pop();
     }
 
-    public void ClearModals() => _modalStack.Clear();
+    public void SetSelectionModal(SelectionModalDescriptor modal)
+    {
+        _selectionModal = modal;
+        InputConsumed = true;
+    }
+
+    public void CloseSelectionModal()
+    {
+        _selectionModal = null;
+    }
+
+    public void ClearModals()
+    {
+        _modalStack.Clear();
+        _selectionModal = null;
+    }
 }
 
 /// <summary>

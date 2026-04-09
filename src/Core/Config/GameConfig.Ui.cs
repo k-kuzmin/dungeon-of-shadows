@@ -53,4 +53,12 @@ public partial class GameConfig
     public int ModalTitleFontSize { get; init; } = 22;
     public int ModalTextFontSize { get; init; } = 16;
     public int ModalButtonFontSize { get; init; } = 16;
+
+    // --- Selection Modal ---
+    public int SelectionModalOptionHeight { get; init; } = 24;
+    public int SelectionModalOptionFontSize { get; init; } = 16;
+    public int SelectionModalTitleFontSize { get; init; } = 20;
+    public int SelectionModalPaddingTop { get; init; } = 44;
+    public int SelectionModalPaddingX { get; init; } = 16;
+    public int SelectionModalHintFontSize { get; init; } = 12;
 }

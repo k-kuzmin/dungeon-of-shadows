@@ -3,6 +3,7 @@ using DungeonOfShadows.Core;
 using DungeonOfShadows.ECS.Combat;
 using DungeonOfShadows.ECS.Magic;
 using DungeonOfShadows.ECS.Magic.Components;
+using DungeonOfShadows.UI;
 
 namespace DungeonOfShadows.ECS.Items.Systems;
 
@@ -12,15 +13,20 @@ public class ItemUseSystem : ITickable
     private readonly World _world;
     private readonly GameConfig _config;
     private readonly ItemDatabase _db;
+    private readonly SpellDatabase _spellDb;
+    private readonly UiContext _uiCtx;
     private readonly List<int> _playerBuffer = new();
     private readonly List<int> _enemyBuffer = new();
 
-    public ItemUseSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db)
+    public ItemUseSystem(GameContext ctx, World world, GameConfig config, ItemDatabase db,
+        SpellDatabase spellDb, UiContext uiCtx)
     {
         _ctx = ctx;
         _world = world;
         _config = config;
         _db = db;
+        _spellDb = spellDb;
+        _uiCtx = uiCtx;
     }
 
     public void Tick(float dt)
@@ -70,16 +76,11 @@ public class ItemUseSystem : ITickable
             return;
         }
 
-        // Для SpellScroll проверяем возможность обучения ДО потребления предмета
+        // Для SpellScroll — отдельная обработка через TryLearnOrUpgrade
         if (def.EffectType == ItemEffectType.TeachSpell)
         {
-            if (!_world.Has<SpellSlots>(playerId)) { ShowMessage("No spell slots"); return; }
-            ref var slots = ref _world.Get<SpellSlots>(playerId);
-            if (!MagicHelper.CanLearnSpell(ref slots, def.SpellId))
-            {
-                ShowMessage("Already known or slots full");
-                return;
-            }
+            HandleSpellScroll(playerId, ref inv, ref quick, definitionId, def);
+            return;
         }
 
         if (!TryConsume(ref inv, definitionId))
@@ -165,24 +166,6 @@ public class ItemUseSystem : ITickable
             ShowMessage("Nova cast");
         }
 
-        if (def.EffectType == ItemEffectType.TeachSpell)
-        {
-            if (!world.Has<SpellSlots>(playerId))
-            {
-                ShowMessage("No spell slots");
-                return;
-            }
-
-            ref var slots = ref world.Get<SpellSlots>(playerId);
-            if (MagicHelper.TryLearnSpell(ref slots, def.SpellId))
-            {
-                ShowMessage("Learned spell");
-            }
-            else
-            {
-                ShowMessage("Cannot learn");
-            }
-        }
     }
 
     private static bool HasInInventory(ref Inventory inv, int definitionId)
@@ -202,6 +185,95 @@ public class ItemUseSystem : ITickable
         if (qs.Slot2DefinitionId == definitionId) qs.Slot2DefinitionId = -1;
         if (qs.Slot3DefinitionId == definitionId) qs.Slot3DefinitionId = -1;
         if (qs.Slot4DefinitionId == definitionId) qs.Slot4DefinitionId = -1;
+    }
+
+    private void HandleSpellScroll(int playerId, ref Inventory inv, ref QuickSlots quick,
+        int definitionId, ItemDefinition def)
+    {
+        if (!_world.Has<SpellSlots>(playerId)) { ShowMessage("No spell slots"); return; }
+        ref var slots = ref _world.Get<SpellSlots>(playerId);
+
+        var result = MagicHelper.TryLearnOrUpgrade(ref slots, def.SpellId, _config.MaxSpellLevel);
+
+        switch (result)
+        {
+            case LearnResult.Learned:
+                ConsumeAndClear(ref inv, ref quick, definitionId);
+                ShowMessage("Learned spell");
+                break;
+
+            case LearnResult.Upgraded:
+            {
+                ConsumeAndClear(ref inv, ref quick, definitionId);
+                int idx = slots.FindSpellIndex(def.SpellId);
+                int lvl = idx >= 0 ? slots.Slots[idx].Level : 0;
+                ShowMessage($"Spell Lv.{lvl}");
+                break;
+            }
+
+            case LearnResult.AlreadyMaxLevel:
+                ShowMessage("Already max level");
+                break;
+
+            case LearnResult.SlotsFull:
+                OpenReplaceModal(playerId, ref inv, ref quick, definitionId, def);
+                break;
+        }
+    }
+
+    private void OpenReplaceModal(int playerId, ref Inventory inv, ref QuickSlots quick,
+        int definitionId, ItemDefinition def)
+    {
+        ref var slots = ref _world.Get<SpellSlots>(playerId);
+        int cap = slots.Capacity;
+        var options = new string[cap];
+        for (int i = 0; i < cap; i++)
+        {
+            var slot = slots.GetSlot(i);
+            string spellName = "???";
+            if (_spellDb.TryGet(slot.SpellId, out var spellDef))
+                spellName = spellDef.Name;
+            options[i] = $"{spellName} Lv.{slot.Level}";
+        }
+
+        string newSpellName = "spell";
+        if (_spellDb.TryGet(def.SpellId, out var newDef))
+            newSpellName = newDef.Name;
+        string title = $"Replace with {newSpellName}?";
+
+        // Захватываем ID (value types) для лямбды
+        int capturedPlayerId = playerId;
+        int capturedDefId = definitionId;
+        int capturedSpellId = def.SpellId;
+
+        var modal = new SelectionModalDescriptor(title, options,
+            onConfirm: (chosenIdx) =>
+            {
+                if (!_world.Has<SpellSlots>(capturedPlayerId)) return;
+                ref var s = ref _world.Get<SpellSlots>(capturedPlayerId);
+                MagicHelper.ReplaceSpell(ref s, chosenIdx, capturedSpellId);
+
+                if (_world.Has<Inventory>(capturedPlayerId) && _world.Has<QuickSlots>(capturedPlayerId))
+                {
+                    ref var invRef = ref _world.Get<Inventory>(capturedPlayerId);
+                    ref var qsRef = ref _world.Get<QuickSlots>(capturedPlayerId);
+                    ConsumeAndClear(ref invRef, ref qsRef, capturedDefId);
+                }
+                ShowMessage("Replaced spell");
+            },
+            onCancel: () => { ShowMessage("Cancelled"); });
+
+        _uiCtx.SetSelectionModal(modal);
+    }
+
+    private void ConsumeAndClear(ref Inventory inv, ref QuickSlots quick, int definitionId)
+    {
+        TryConsume(ref inv, definitionId);
+        if (!HasInInventory(ref inv, definitionId))
+            ClearQuickSlot(ref quick, definitionId);
+
+        if (_config.ScrollCooldownSeconds > 0)
+            quick.ScrollCooldown = _config.ScrollCooldownSeconds;
     }
 
     private void ShowMessage(string text)

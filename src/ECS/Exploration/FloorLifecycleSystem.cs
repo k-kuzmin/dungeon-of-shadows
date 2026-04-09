@@ -6,6 +6,7 @@ using DungeonOfShadows.ECS.Items;
 using DungeonOfShadows.ECS.Magic;
 using DungeonOfShadows.ECS.Magic.Components;
 using DungeonOfShadows.ECS.Rendering;
+using DungeonOfShadows.UI;
 
 namespace DungeonOfShadows.ECS.Exploration.Systems;
 
@@ -19,14 +20,17 @@ public class FloorLifecycleSystem : IStartable, ITickable
     private readonly World _world;
     private readonly GameConfig _config;
     private readonly AnimatorDatabase _animDb;
+    private readonly UiContext _uiCtx;
     private readonly List<int> _queryBuffer = new();
 
-    public FloorLifecycleSystem(GameContext ctx, World world, GameConfig config, AnimatorDatabase animDb)
+    public FloorLifecycleSystem(GameContext ctx, World world, GameConfig config,
+        AnimatorDatabase animDb, UiContext uiCtx)
     {
         _ctx = ctx;
         _world = world;
         _config = config;
         _animDb = animDb;
+        _uiCtx = uiCtx;
     }
 
     /// <summary>
@@ -58,6 +62,9 @@ public class FloorLifecycleSystem : IStartable, ITickable
 
     private void DescendFloor()
     {
+        // Закрываем все модалки (SelectionModal мог быть открыт)
+        _uiCtx.ClearModals();
+
         var world = _world;
 
         // Находим игрока
@@ -100,7 +107,32 @@ public class FloorLifecycleSystem : IStartable, ITickable
         if (world.Has<Invincible>(playerId))
             world.Remove<Invincible>(playerId);
 
+        // Разблокировка слотов заклинаний по этажу
+        TryExpandSpellSlots(playerId);
+
         SpawnFloorEntities();
+    }
+
+    private void TryExpandSpellSlots(int playerId)
+    {
+        if (!_world.Has<SpellSlots>(playerId)) return;
+        ref var slots = ref _world.Get<SpellSlots>(playerId);
+
+        int floor = _ctx.CurrentFloor;
+        int maxCap = _config.SpellSlotMaxCapacity;
+        int newCap = slots.Capacity;
+
+        if (floor >= _config.SpellSlotUnlockFloor4)
+            newCap = Math.Max(newCap, Math.Min(_config.SpellSlotCapacityAtFloor4, maxCap));
+        if (floor >= _config.SpellSlotUnlockFloor7)
+            newCap = Math.Max(newCap, Math.Min(_config.SpellSlotCapacityAtFloor7, maxCap));
+
+        if (newCap > slots.Capacity)
+        {
+            slots.Expand(newCap);
+            _ctx.UiMessage = "New spell slot!";
+            _ctx.UiMessageTimer = _config.UiMessageSeconds;
+        }
     }
 
     private void SpawnFloorEntities()
@@ -149,8 +181,8 @@ public class FloorLifecycleSystem : IStartable, ITickable
         world.Add(playerId, new Equipment());
         world.Add(playerId, new QuickSlots(init: true));
         world.Add(playerId, new Mana(_config.PlayerBaseMana, _config.PlayerBaseMana));
-        var spellSlots = new SpellSlots(init: true);
-        spellSlots.Slot0SpellId = 1; // Magic Bolt по умолчанию
+        var spellSlots = new SpellSlots(_config.SpellSlotInitialCapacity);
+        spellSlots.SetSlot(0, 1, 1); // Magic Bolt Lv.1 по умолчанию
         world.Add(playerId, spellSlots);
 
         // Анимация героя
