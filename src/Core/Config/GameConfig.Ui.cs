@@ -61,4 +61,15 @@ public partial class GameConfig
     public int SelectionModalPaddingTop { get; init; } = 44;
     public int SelectionModalPaddingX { get; init; } = 16;
     public int SelectionModalHintFontSize { get; init; } = 12;
+
+    // --- Controls Overlay ---
+    public int ControlsOverlayWidth { get; init; } = 400;
+    public int ControlsOverlayHeight { get; init; } = 380;
+    public int ControlsOverlayTitleFontSize { get; init; } = 22;
+    public int ControlsOverlayLineFontSize { get; init; } = 15;
+    public int ControlsOverlayLineHeight { get; init; } = 24;
+    public int ControlsOverlayPaddingTop { get; init; } = 48;
+    public int ControlsOverlayPaddingX { get; init; } = 24;
+    public int ControlsOverlayKeyColumnWidth { get; init; } = 160;
+    public int ControlsOverlayHintFontSize { get; init; } = 14;
 }

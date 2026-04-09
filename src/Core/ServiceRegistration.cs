@@ -43,6 +43,7 @@ public static class ServiceRegistration
 
         // Systems — registration order = tick/start/draw order
         services.AddInterfaces<FloorLifecycleSystem>();
+        services.AddInterfaces<ControlsOverlaySystem>();  // оверлей управления на старте (Start после генерации этажа)
         services.AddInterfaces<UiInputSystem>();
         services.AddInterfaces<InputSystem>();
         services.AddInterfaces<InventoryInputSystem>();
@@ -64,6 +65,7 @@ public static class ServiceRegistration
         services.AddInterfaces<DamageNumberSystem>();
         services.AddInterfaces<FloorTransitionSystem>();
         services.AddInterfaces<FovSystem>();
+        services.AddInterfaces<TileFadeSystem>();
         services.AddInterfaces<CharacterAnimationStateSystem>();
         services.AddInterfaces<AnimationSystem>();
         services.AddInterfaces<CameraSystem>();

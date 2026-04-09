@@ -78,10 +78,24 @@ public class InventoryRenderSystem : IRenderTickable
             Raylib.DrawText(_ctx.UiMessage, x, 16, _config.UiMessageFontSize, Color.Gold);
         }
 
+        // Controls overlay — поверх всего, до любых проверок
+        if (_uiCtx.ControlsOverlayActive)
+        {
+            UiControlsOverlay.Draw(_config, _theme, _textCache);
+            return;
+        }
+
         // SelectionModal рисуется поверх всего (даже без открытого инвентаря)
         if (_uiCtx.HasSelectionModal)
         {
             UiSelectionModal.Draw(_uiCtx.SelectionModal!, _config, _theme, _textCache);
+            return;
+        }
+
+        // Стандартная модалка — поверх всего (даже без открытого инвентаря)
+        if (_uiCtx.HasStandardModal)
+        {
+            UiModal.Draw(_uiCtx.TopModal, _config, _theme, _textCache);
             return;
         }
 
@@ -182,10 +196,6 @@ public class InventoryRenderSystem : IRenderTickable
         }
 
         DrawTooltip(_cachedTooltip, _cachedCompare, panelX + 360, panelY + 56);
-
-        // Модальное окно поверх всего
-        if (_uiCtx.HasStandardModal)
-            UiModal.Draw(_uiCtx.TopModal, _config, _theme, _textCache);
     }
 
     private void DrawQuickSlots()

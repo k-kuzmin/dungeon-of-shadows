@@ -42,12 +42,6 @@ public class Game
             if (Raylib.IsKeyPressed(KeyboardKey.F3))
                 _ctx.DebugMode = !_ctx.DebugMode;
 
-            if (Raylib.IsKeyPressed(KeyboardKey.Tab))
-            {
-                _ctx.ShowFullMap = !_ctx.ShowFullMap;
-                _ctx.State = (_ctx.ShowFullMap || _ctx.ShowInventory) ? GameState.Paused : GameState.Playing;
-            }
-
             for (int i = 0; i < _tickables.Count; i++)
                 _tickables[i].Tick(dt);
         }

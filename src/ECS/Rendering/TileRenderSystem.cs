@@ -15,8 +15,11 @@ public class TileRenderSystem : IRenderTickable
 
     public RenderPhase Phase => RenderPhase.World;
 
-    private static readonly Color ExploredTint = new(100, 100, 100, 255);
-    private static readonly Color FullTint = Color.White;
+    private static Color FovTint(float brightness)
+    {
+        byte v = (byte)(brightness * 255f);
+        return new Color(v, v, v, (byte)255);
+    }
 
     public TileRenderSystem(GameContext ctx, IAssetProvider assets, GameConfig config)
     {
@@ -57,7 +60,7 @@ public class TileRenderSystem : IRenderTickable
                 ref var tile = ref map.Tiles[x, y];
                 if (tile.Visibility == 0) continue;
 
-                Color tint = tile.Visibility == 1 ? ExploredTint : FullTint;
+                Color tint = FovTint(tile.FovBrightness);
                 float destX = x * ts;
                 float destY = y * ts;
 
@@ -110,7 +113,7 @@ public class TileRenderSystem : IRenderTickable
                     float crackX = destX + ts / 2f - crackW / 2f;
                     float crackY = destY + ts / 2f - crackH / 2f;
                     var destRect = new Rectangle(crackX, crackY, crackW, crackH);
-                    Raylib.DrawTexturePro(crackFloorTex, crackSrc, destRect, System.Numerics.Vector2.Zero, 0f, FullTint);
+                    Raylib.DrawTexturePro(crackFloorTex, crackSrc, destRect, System.Numerics.Vector2.Zero, 0f, tint);
                 }
             }
         }
@@ -125,7 +128,7 @@ public class TileRenderSystem : IRenderTickable
                 if (tile.Visibility == 0) continue;
                 if (!IsWallTile(map, x, y - 1)) continue;
 
-                Color tint = tile.Visibility == 1 ? ExploredTint : FullTint;
+                Color tint = FovTint(tile.FovBrightness);
                 int variant = GetWallFaceVariant(map, x, y);
                 var src = TileAtlas.GetWallFaceSource(variant);
                 var dest = new Rectangle(x * ts, y * ts, ts, ts);
@@ -142,7 +145,7 @@ public class TileRenderSystem : IRenderTickable
                 if (tile.Type != TileType.StairDown) continue;
                 if (tile.Visibility == 0) continue;
 
-                Color tint = tile.Visibility == 1 ? ExploredTint : FullTint;
+                Color tint = FovTint(tile.FovBrightness);
                 DrawStair(objectsTex, x * ts, y * ts, ts, scale, tint);
             }
         }

@@ -30,6 +30,8 @@ public struct Tile
     public byte FloorVariant;
     /// <summary>Индекс трещины-оверлея (0 = нет). Вычисляется при генерации.</summary>
     public byte OverlayIndex;
+    /// <summary>Текущая яркость для плавного FOV-перехода. 0 = чёрный, ~0.39 = explored, 1.0 = видимый.</summary>
+    public float FovBrightness;
 
     public Tile(TileType type)
     {
@@ -39,6 +41,7 @@ public struct Tile
         AutotileIndex = 0;
         FloorVariant = 0;
         OverlayIndex = 0;
+        FovBrightness = 0f;
     }
 }
 

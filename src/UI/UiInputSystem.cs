@@ -21,6 +21,15 @@ public class UiInputSystem : ITickable
     {
         _uiCtx.ClearFrame();
 
+        // Controls overlay (приоритет — блокирует всё до закрытия)
+        if (_uiCtx.ControlsOverlayActive)
+        {
+            _uiCtx.InputConsumed = true;
+            if (Raylib.IsKeyPressed(KeyboardKey.Enter))
+                _uiCtx.CloseControlsOverlay();
+            return;
+        }
+
         // SelectionModal (приоритет над стандартной модалкой)
         if (_uiCtx.HasSelectionModal)
         {
