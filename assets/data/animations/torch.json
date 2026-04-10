@@ -1,0 +1,10 @@
+{
+  "id": "torch",
+  "type": "simple",
+  "frameWidth": 32,
+  "frameHeight": 48,
+  "initialClip": "idle",
+  "clips": [
+    { "name": "idle", "texture": "fire_large", "frames": 6, "frameDuration": 0.15, "loop": true, "startX": 0, "startY": 0, "strideX": 0, "strideY": 48 }
+  ]
+}

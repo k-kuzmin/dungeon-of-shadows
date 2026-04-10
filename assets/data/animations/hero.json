@@ -1,0 +1,15 @@
+{
+  "id": "hero",
+  "type": "directional",
+  "directions": ["Down", "Left", "Right", "Up"],
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "initialClip": "Idle_Down",
+  "clips": [
+    { "name": "Idle",      "texture": "hero_idle",       "frames": 12, "framesPerDirection": [12, 12, 12, 4], "frameDuration": 0.15, "loop": true },
+    { "name": "Run",       "texture": "hero_run",        "frames": 8,  "frameDuration": 0.10, "loop": true },
+    { "name": "Attack",    "texture": "hero_attack",     "frames": 8,  "frameDuration": 0.05, "loop": false },
+    { "name": "RunAttack", "texture": "hero_run_attack", "frames": 8,  "frameDuration": 0.07, "loop": false },
+    { "name": "Death",     "texture": "hero_death",      "frames": 7,  "frameDuration": 0.12, "loop": false }
+  ]
+}

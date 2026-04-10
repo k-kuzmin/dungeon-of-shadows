@@ -1,0 +1,11 @@
+{
+  "id": "chest",
+  "type": "multi",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "initialClip": "idle",
+  "clips": [
+    { "name": "idle", "texture": "doors_chest", "frames": 1, "frameDuration": 1.0,  "loop": true,  "startX": 128, "startY": 16, "strideX": 0, "strideY": 0 },
+    { "name": "open", "texture": "doors_chest", "frames": 5, "frameDuration": 0.10, "loop": false, "startX": 128, "startY": 16, "strideX": 0, "strideY": 48 }
+  ]
+}

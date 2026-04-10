@@ -1,0 +1,72 @@
+[
+  {
+    "Id": 1,
+    "Name": "Magic Bolt",
+    "SpellId": 1,
+    "ManaCost": 3,
+    "CastCooldown": 0.3,
+    "BaseDamage": 10,
+    "IntScaling": 2.0,
+    "ProjectileSpeed": 8.0,
+    "Range": 10.0
+  },
+  {
+    "Id": 2,
+    "Name": "Fireball",
+    "SpellId": 2,
+    "ManaCost": 8,
+    "CastCooldown": 1.5,
+    "BaseDamage": 18,
+    "IntScaling": 2.5,
+    "ProjectileSpeed": 6.0,
+    "Range": 8.0,
+    "ExplodeOnHit": true,
+    "AoeRadius": 1.5,
+    "OnHitEffect": 1,
+    "EffectDuration": 3.0,
+    "EffectDamagePerTick": 5
+  },
+  {
+    "Id": 3,
+    "Name": "Frost Nova",
+    "SpellId": 3,
+    "ManaCost": 6,
+    "CastCooldown": 2.5,
+    "BaseDamage": 8,
+    "IntScaling": 1.0,
+    "AoeRadius": 2.5,
+    "OnHitEffect": 2,
+    "EffectDuration": 3.0,
+    "SlowFactor": 0.4
+  },
+  {
+    "Id": 4,
+    "Name": "Chain Lightning",
+    "SpellId": 4,
+    "ManaCost": 10,
+    "CastCooldown": 2.0,
+    "BaseDamage": 15,
+    "IntScaling": 2.0,
+    "ProjectileSpeed": 12.0,
+    "Range": 8.0,
+    "ChainMaxTargets": 4,
+    "ChainRadius": 4.0
+  },
+  {
+    "Id": 5,
+    "Name": "Shadow Step",
+    "SpellId": 5,
+    "ManaCost": 5,
+    "CastCooldown": 4.0,
+    "TeleportRange": 5
+  },
+  {
+    "Id": 6,
+    "Name": "Heal",
+    "SpellId": 6,
+    "ManaCost": 7,
+    "CastCooldown": 5.0,
+    "BaseHeal": 20,
+    "HealIntScaling": 1.5
+  }
+]

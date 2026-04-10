@@ -1,0 +1,15 @@
+{
+  "id": "orc3",
+  "type": "directional",
+  "directions": ["Down", "Up", "Left", "Right"],
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "initialClip": "Idle_Down",
+  "clips": [
+    { "name": "Idle",      "texture": "orc3_idle",       "frames": 4, "frameDuration": 0.15, "loop": true },
+    { "name": "Run",       "texture": "orc3_run",        "frames": 8, "frameDuration": 0.10, "loop": true },
+    { "name": "Attack",    "texture": "orc3_attack",     "frames": 8, "frameDuration": 0.10, "loop": false },
+    { "name": "RunAttack", "texture": "orc3_run_attack", "frames": 8, "frameDuration": 0.07, "loop": false },
+    { "name": "Death",     "texture": "orc3_death",      "frames": 8, "frameDuration": 0.12, "loop": false }
+  ]
+}

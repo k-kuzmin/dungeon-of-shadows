@@ -1,0 +1,10 @@
+{
+  "id": "fireball",
+  "type": "simple",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "initialClip": "fly",
+  "clips": [
+    { "name": "fly", "texture": "fireball", "frames": 8, "frameDuration": 0.08, "loop": true, "startX": 0, "startY": 0, "strideX": 16, "strideY": 0 }
+  ]
+}

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cracks Atlas Viewer</title>
+<style>
+  body { background: #1a1a2e; color: #eee; font-family: monospace; margin: 20px; }
+  h2 { color: #e94560; }
+  .section { display: inline-block; vertical-align: top; margin-right: 40px; }
+  .atlas-container { position: relative; display: inline-block; cursor: crosshair; }
+  .atlas-container img { display: block; image-rendering: pixelated; }
+  .grid-overlay, .highlight-overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+  #info { position: fixed; top: 10px; right: 10px; background: #16213e; padding: 12px 18px;
+          border: 2px solid #e94560; border-radius: 8px; font-size: 14px; z-index: 10; min-width: 280px; }
+  #info b { color: #e94560; }
+  .instructions { margin: 10px 0 20px; color: #aaa; line-height: 1.6; }
+  .current { background: #16213e; padding: 10px; border-radius: 6px; margin: 10px 0; font-size: 12px; }
+  .current b { color: #e94560; }
+  button { background: #e94560; color: #fff; border: none; padding: 6px 14px; cursor: pointer;
+           border-radius: 4px; margin: 3px; font-family: monospace; }
+  #selected-list pre { color: #0f0; margin: 2px 0; font-size: 11px; }
+</style>
+</head>
+<body>
+<h2>Crack Atlases Viewer (x5 zoom)</h2>
+<div class="instructions">
+  Красные рамки = текущий маппинг в коде. Найди правильные тайлы трещин для пола и стен.
+</div>
+
+<div id="info">
+  <div>Atlas: <b id="which">-</b></div>
+  <div>Cell: <b id="cx">-</b>, <b id="cy">-</b></div>
+  <div>Mapping: <b id="mapping" style="color:#0f0">-</b></div>
+  <hr style="border-color:#333">
+  <button onclick="addToList()">Добавить</button>
+  <div id="selected-list"></div>
+</div>
+
+<div class="section">
+  <h3>decorative_cracks_floor.png (128x240, 8 cols x 15 rows)</h3>
+  <div class="current">
+    <b>Текущий маппинг (12 тайлов):</b><br>
+    Row 0: (0,0)-(7,0) &nbsp; Row 1: (0,1)-(3,1)
+  </div>
+  <div class="atlas-container" data-atlas="floor" id="container-floor">
+    <img src="decorative_cracks_floor.png" draggable="false" class="atlas-img">
+    <canvas class="grid-overlay grid-canvas"></canvas>
+    <canvas class="highlight-overlay hl-canvas"></canvas>
+  </div>
+</div>
+
+<div class="section">
+  <h3>decorative_cracks_walls.png (128x512, 8 cols x 32 rows)</h3>
+  <div class="current">
+    <b>Текущий маппинг (10 тайлов):</b><br>
+    Row 0: (0,0)-(7,0) &nbsp; Row 1: (0,1)-(1,1)
+  </div>
+  <div class="atlas-container" data-atlas="walls" id="container-walls">
+    <img src="decorative_cracks_walls.png" draggable="false" class="atlas-img">
+    <canvas class="grid-overlay grid-canvas"></canvas>
+    <canvas class="highlight-overlay hl-canvas"></canvas>
+  </div>
+</div>
+
+<script>
+const SCALE = 5;
+const TILE = 16;
+
+const floorCracks = [
+  [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],
+  [0,1],[1,1],[2,1],[3,1]
+];
+const wallCracks = [
+  [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],
+  [0,1],[1,1]
+];
+
+let currentAtlas = '', currentCol = 0, currentRow = 0;
+
+document.querySelectorAll('.atlas-img').forEach(img => {
+  img.onload = () => {
+    const cont = img.closest('.atlas-container');
+    const w = img.naturalWidth * SCALE, h = img.naturalHeight * SCALE;
+    img.style.width = w + 'px'; img.style.height = h + 'px';
+
+    const grid = cont.querySelector('.grid-canvas');
+    grid.width = w; grid.height = h;
+    grid.style.width = w + 'px'; grid.style.height = h + 'px';
+
+    const hl = cont.querySelector('.hl-canvas');
+    hl.width = w; hl.height = h;
+    hl.style.width = w + 'px'; hl.style.height = h + 'px';
+
+    // Grid
+    const ctx = grid.getContext('2d');
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= w; x += TILE * SCALE) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+    for (let y = 0; y <= h; y += TILE * SCALE) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,255,0,0.4)';
+    ctx.font = '9px monospace';
+    const cols = Math.floor(img.naturalWidth / TILE);
+    const rows = Math.floor(img.naturalHeight / TILE);
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++)
+        ctx.fillText(`${c},${r}`, c*TILE*SCALE+2, r*TILE*SCALE+10);
+
+    // Highlights
+    const hctx = hl.getContext('2d');
+    const isFloor = cont.dataset.atlas === 'floor';
+    const cracks = isFloor ? floorCracks : wallCracks;
+    for (const [c,r] of cracks) {
+      hctx.strokeStyle = 'rgba(255,0,0,0.7)';
+      hctx.lineWidth = 2;
+      hctx.strokeRect(c*TILE*SCALE+1, r*TILE*SCALE+1, TILE*SCALE-2, TILE*SCALE-2);
+    }
+  };
+});
+
+document.querySelectorAll('.atlas-container').forEach(cont => {
+  cont.addEventListener('mousemove', (e) => {
+    const img = cont.querySelector('.atlas-img');
+    const rect = cont.getBoundingClientRect();
+    const px = Math.floor((e.clientX - rect.left) / SCALE);
+    const py = Math.floor((e.clientY - rect.top) / SCALE);
+    const cx = Math.floor(px / TILE), cy = Math.floor(py / TILE);
+    currentAtlas = cont.dataset.atlas;
+    currentCol = cx; currentRow = cy;
+    document.getElementById('which').textContent = currentAtlas;
+    document.getElementById('cx').textContent = cx;
+    document.getElementById('cy').textContent = cy;
+
+    const cracks = currentAtlas === 'floor' ? floorCracks : wallCracks;
+    const used = cracks.some(([c,r]) => c===cx && r===cy);
+    document.getElementById('mapping').textContent = used ? 'ИСПОЛЬЗУЕТСЯ' : 'не используется';
+  });
+});
+
+function addToList() {
+  const name = prompt(`${currentAtlas} crack — назначение:`);
+  if (!name) return;
+  const div = document.createElement('div');
+  div.innerHTML = `<pre>${currentAtlas}: ${name} → col=${currentCol}, row=${currentRow}</pre>`;
+  document.getElementById('selected-list').appendChild(div);
+}
+</script>
+</body>
+</html>
