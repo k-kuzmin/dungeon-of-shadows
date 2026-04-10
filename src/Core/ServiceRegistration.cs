@@ -78,6 +78,7 @@ public static class ServiceRegistration
         services.AddInterfaces<YSortedRenderSystem>();        // сущности + сундуки + декор (Y-sorted)
         services.AddInterfaces<CombatRenderSystem>();
         services.AddInterfaces<SpellRenderSystem>();
+        services.AddInterfaces<InteractionPromptRenderSystem>();
         services.AddInterfaces<DebugRenderSystem>();
         services.AddInterfaces<HudRenderSystem>();
         services.AddInterfaces<MagicHudRenderSystem>();
