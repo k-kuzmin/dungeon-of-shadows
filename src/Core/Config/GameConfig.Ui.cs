@@ -62,6 +62,11 @@ public partial class GameConfig
     public int SelectionModalPaddingX { get; init; } = 16;
     public int SelectionModalHintFontSize { get; init; } = 12;
 
+    // --- Interaction Hints (world-space) ---
+    public int InteractionHintFontSize { get; init; } = 12;
+    public int InteractionHintOffsetY { get; init; } = 6;
+    public int InteractionHintPadding { get; init; } = 4;
+
     // --- Controls Overlay ---
     public int ControlsOverlayWidth { get; init; } = 400;
     public int ControlsOverlayHeight { get; init; } = 380;
