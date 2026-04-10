@@ -32,6 +32,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           DIFF_TRIMMED: ${{ steps.diff.outputs.trimmed }}
+          GH_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -75,11 +76,12 @@ jobs:
             ${diff}
             \`\`\``;
 
-            // Вызов GitHub Models API (Claude Sonnet)
+            // Вызов GitHub Models API (GPT-4.1)
+            const modelsToken = process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN;
             const response = await fetch('https://models.github.ai/inference/chat/completions', {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
+                'Authorization': `Bearer ${modelsToken}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
