@@ -3,7 +3,14 @@
 Action Roguelike с процедурными подземельями, реалтайм-боем, системой магии и permadeath.
 Написан на C# 12 + Raylib-cs + NativeAOT.
 
-<!-- ![Gameplay](docs/screenshots/gameplay.png) -->
+<p align="center">
+  <img src="docs/screenshots/gameplay.png" width="45%" alt="Геймплей — бой с врагами">
+  <img src="docs/screenshots/dungeon.png" width="45%" alt="Подземелье с туманом войны">
+</p>
+<p align="center">
+  <img src="docs/screenshots/magic.png" width="45%" alt="Каст заклинания">
+  <img src="docs/screenshots/inventory.png" width="45%" alt="Инвентарь и экипировка">
+</p>
 
 ## Возможности
 
