@@ -1,103 +1,103 @@
 # Dungeon of Shadows
 
-Action Roguelike with procedural dungeons, real-time combat, magic system, and permadeath.
-Built with C# 12, Raylib-cs, and NativeAOT.
+Action Roguelike с процедурными подземельями, реалтайм-боем, системой магии и permadeath.
+Написан на C# 12 + Raylib-cs + NativeAOT.
 
 <!-- ![Gameplay](docs/screenshots/gameplay.png) -->
 
-## Features
+## Возможности
 
-- **Procedural Dungeons** — BSP-generated floors with 8-14 rooms, L-shaped corridors, fog of war, decorations, and floor scaling every 5 levels
-- **Real-time Combat** — Melee attacks, dash with i-frames, 3 enemy types with A* pathfinding
-- **Magic System** — 6 spells (Magic Bolt, Fireball, Frost Nova, Chain Lightning, Shadow Step, Heal), mana, cooldowns, status effects (Burn, Slow)
-- **Loot & Equipment** — Swords, armor, rings, amulets, potions, spell scrolls. Rarity tiers, inventory, quick slots
-- **Pixel Art** — 16x16 sprites, animated characters, Y-sorted depth rendering, fog of war
+- **Процедурные подземелья** — BSP-генерация этажей с 8-14 комнатами, L-образные коридоры, туман войны, декорации, масштабирование каждые 5 уровней
+- **Реалтайм-бой** — Атаки ближнего боя, дэш с i-frames, 3 типа врагов с A* навигацией
+- **Система магии** — 6 заклинаний (Magic Bolt, Fireball, Frost Nova, Chain Lightning, Shadow Step, Heal), мана, кулдауны, статус-эффекты (Burn, Slow)
+- **Лут и экипировка** — Мечи, броня, кольца, амулеты, зелья, свитки заклинаний. Уровни редкости, инвентарь, быстрые слоты
+- **Пиксель-арт** — 16x16 спрайты, анимированные персонажи, Y-сортировка глубины, туман войны
 
-## Tech Stack
+## Технологии
 
 | | |
 |---|---|
-| Language | C# 12 / .NET 8 |
-| Graphics | [Raylib-cs](https://github.com/ChristopherRae/Raylib-cs) 6.1.1 |
+| Язык | C# 12 / .NET 8 |
+| Графика | [Raylib-cs](https://github.com/ChristopherRae/Raylib-cs) 6.1.1 |
 | DI | Microsoft.Extensions.DependencyInjection |
-| Compilation | NativeAOT (single binary, no runtime) |
-| Architecture | Custom ECS (Entity Component System) |
-| Data | JSON configs with AOT-compatible source generators |
+| Компиляция | NativeAOT (единый бинарник, без рантайма) |
+| Архитектура | Собственный ECS (Entity Component System) |
+| Данные | JSON-конфиги с AOT-совместимыми source generators |
 
-## Build & Run
+## Сборка и запуск
 
-**Requirements:** .NET 8 SDK
+**Требования:** .NET 8 SDK
 
 ```bash
-# Development
+# Разработка
 dotnet run --project DungeonOfShadows.csproj
 
-# Release (NativeAOT)
+# Релиз (NativeAOT)
 dotnet publish -c Release -r win-x64 -p:PublishAot=true
 dotnet publish -c Release -r linux-x64 -p:PublishAot=true
 dotnet publish -c Release -r osx-arm64 -p:PublishAot=true
 ```
 
-## Controls
+## Управление
 
-| Key | Action |
-|-----|--------|
-| WASD | Move |
-| LMB | Melee attack |
-| RMB | Cast spell |
-| Z / X / Scroll | Switch spell slot |
-| Shift | Dash |
-| E / Space | Descend stairs |
-| 1-4 | Use quick slot item |
-| Tab | Inventory |
-| F3 | Debug overlay |
+| Клавиша | Действие |
+|---------|----------|
+| WASD | Движение |
+| ЛКМ | Атака ближнего боя |
+| ПКМ | Каст заклинания |
+| Z / X / Колесо мыши | Переключение слота заклинания |
+| Shift | Дэш |
+| E / Space | Спуск по лестнице |
+| 1-4 | Использование предмета из быстрого слота |
+| Tab | Инвентарь |
+| F3 | Дебаг-оверлей |
 
-## Architecture
+## Архитектура
 
-Lightweight ECS with DI-based system lifecycle:
+Легковесный ECS с DI-управляемым жизненным циклом систем:
 
 ```
 Start() → Tick(dt) → Dispose()
    ↑          ↑          ↑
- once    every frame   on exit
+однократно  каждый кадр  при выходе
 ```
 
-Systems are independent — they communicate through shared data (`World` components, `GameContext` flags, event queues). Registration order in `ServiceRegistration.cs` defines tick order.
+Системы независимы — общаются через разделяемые данные (компоненты `World`, флаги `GameContext`, очереди событий). Порядок регистрации в `ServiceRegistration.cs` определяет порядок тика.
 
 ```
 src/
-├── Core/           — Game loop, config, DI, asset loading
+├── Core/           — Game loop, конфиг, DI, загрузка ассетов
 ├── ECS/
-│   ├── Core/       — World, ComponentStore, lifecycle interfaces
-│   ├── Player/     — Input handling
-│   ├── Physics/    — Movement, collisions
-│   ├── Combat/     — Melee, dash, AI, health, damage
-│   ├── Magic/      — Spells, projectiles, status effects, mana
-│   ├── Items/      — Inventory, equipment, loot, chests
-│   ├── Exploration/ — Dungeon generation, FOV, floor transitions
-│   └── Rendering/  — Sprites, tiles, animations, HUD, UI
-├── UI/             — Layout, draw, theme, input routing
-└── Dungeon/        — Tilemap, BSP, room placement, corridors
+│   ├── Core/       — World, ComponentStore, интерфейсы жизненного цикла
+│   ├── Player/     — Обработка ввода
+│   ├── Physics/    — Движение, коллизии
+│   ├── Combat/     — Ближний бой, дэш, AI, здоровье, урон
+│   ├── Magic/      — Заклинания, снаряды, статус-эффекты, мана
+│   ├── Items/      — Инвентарь, экипировка, лут, сундуки
+│   ├── Exploration/ — Генерация подземелий, FOV, переходы этажей
+│   └── Rendering/  — Спрайты, тайлы, анимации, HUD, UI
+├── UI/             — Layout, отрисовка, тема, маршрутизация ввода
+└── Dungeon/        — Тайловая карта, BSP, размещение комнат, коридоры
 ```
 
-## Roadmap
+## Дорожная карта
 
-| Phase | Status |
-|-------|--------|
-| Core (window, movement, camera) | Done |
-| Dungeon Generation (BSP, FOV, minimap) | Done |
-| Combat (melee, AI, dash) | Done |
-| Items (loot, inventory, equipment) | Done |
-| Magic (spells, projectiles, effects) | Done |
-| Progression (XP, leveling, perks) | Planned |
-| Bosses (unique encounters, arenas) | Planned |
-| Polish (audio, balance, particles) | Planned |
+| Фаза | Статус |
+|------|--------|
+| Ядро (окно, движение, камера) | Готово |
+| Генерация подземелий (BSP, FOV, мини-карта) | Готово |
+| Бой (ближний бой, AI, дэш) | Готово |
+| Предметы (лут, инвентарь, экипировка) | Готово |
+| Магия (заклинания, снаряды, эффекты) | Готово |
+| Прогрессия (XP, уровни, перки) | Планируется |
+| Боссы (уникальные встречи, арены) | Планируется |
+| Полировка (аудио, баланс, частицы) | Планируется |
 
 ## CI/CD
 
-- **PR Review** — Automated code review on pull requests via GitHub Models API
-- **Dev Build** — NativeAOT publish + version tag on PR merge to `develop`
+- **PR Review** — Автоматическое код-ревью при создании PR через GitHub Models API
+- **Dev Build** — NativeAOT-сборка + тег версии при мердже PR в `develop`
 
-## License
+## Лицензия
 
-All rights reserved.
+Все права защищены.
