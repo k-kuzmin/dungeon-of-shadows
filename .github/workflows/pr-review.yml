@@ -20,10 +20,10 @@ jobs:
 
       - name: Get PR diff
         id: diff
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr diff ${{ github.event.pull_request.number }} > pr_diff.txt
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          git diff "$BASE_SHA"..."$HEAD_SHA" -- '*.cs' '*.json' '*.yml' '*.yaml' '*.csproj' > pr_diff.txt
           # Ограничиваем размер diff до ~60KB чтобы не превысить контекст модели
           head -c 60000 pr_diff.txt > pr_diff_trimmed.txt
           echo "trimmed=$([ $(wc -c < pr_diff.txt) -gt 60000 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
