@@ -24,9 +24,9 @@ jobs:
           BASE_SHA=${{ github.event.pull_request.base.sha }}
           HEAD_SHA=${{ github.event.pull_request.head.sha }}
           git diff "$BASE_SHA"..."$HEAD_SHA" -- '*.cs' '*.json' '*.yml' '*.yaml' '*.csproj' > pr_diff.txt
-          # Ограничиваем размер diff до ~60KB чтобы не превысить контекст модели
-          head -c 60000 pr_diff.txt > pr_diff_trimmed.txt
-          echo "trimmed=$([ $(wc -c < pr_diff.txt) -gt 60000 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          # GitHub Models free tier: 8000 input tokens (~16KB текста)
+          head -c 16000 pr_diff.txt > pr_diff_trimmed.txt
+          echo "trimmed=$([ $(wc -c < pr_diff.txt) -gt 16000 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Review with GPT-4.1
         uses: actions/github-script@v7
@@ -45,7 +45,7 @@ jobs:
             }
 
             const trimmedNote = process.env.DIFF_TRIMMED === 'true'
-              ? '\n\n> **Note:** Diff был обрезан из-за большого размера. Ревью покрывает только первые ~60KB изменений.'
+              ? '\n\n> **Note:** Diff был обрезан из-за большого размера. Ревью покрывает только первые ~16KB изменений.'
               : '';
 
             const prTitle = context.payload.pull_request.title;
@@ -90,7 +90,7 @@ jobs:
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: userPrompt }
                 ],
-                max_tokens: 4096,
+                max_tokens: 2048,
                 temperature: 0.3
               })
             });
